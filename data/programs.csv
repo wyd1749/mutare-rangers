@@ -1,0 +1,5 @@
+id,name,tagline,ageRange,description,price,image
+u12,U12 Program,Building Fundamentals,Ages 8-12,Introduces young players to the fundamentals of basketball in a fun supportive environment.,$40 / month,/images/player-2.png
+u14,U14 Program,Skill Development,Ages 12-14,Focuses on developing core skills teamwork and basketball IQ for growing athletes.,$50 / month,/images/player-4.png
+u16,U16 Program,Competitive Training,Ages 14-16,Intensive competitive training preparing players for league and tournament play.,$65 / month,/images/player-3.png
+elite,Elite Program,Future Stars,Ages 16+,Elite-level coaching for the most dedicated athletes chasing professional and college careers.,$90 / month,/images/player-1.png
