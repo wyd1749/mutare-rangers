@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -31,7 +31,6 @@ export async function middleware(request: NextRequest) {
   const isAdminRoute = pathname.startsWith('/admin')
   const isLoginRoute = pathname === '/login'
 
-  // Not logged in and trying to reach admin → send to login
   if (isAdminRoute && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -39,7 +38,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Already logged in and trying to reach login → send to admin dashboard
   if (isLoginRoute && user) {
     const url = request.nextUrl.clone()
     url.pathname = '/admin'
