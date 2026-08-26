@@ -1,6 +1,8 @@
 import type React from "react"
 import { AdminSidebar, AdminMobileNav } from "@/components/admin/admin-sidebar"
 
+export const dynamic = 'force-dynamic'
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh bg-background">
