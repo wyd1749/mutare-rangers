@@ -127,8 +127,8 @@ export default function NewsAdmin() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((n) => (
             <Card key={n.id} className="flex flex-col overflow-hidden p-0">
-              <div className="relative h-36 overflow-hidden">
-                <Image src={n.image || "/placeholder.svg"} alt="" fill className="object-cover" />
+              <div className="relative h-48 overflow-hidden">
+                <Image src={n.image || "/placeholder.svg"} alt="" fill className="object-cover object-top" />
                 <Badge variant="accent" className="absolute left-3 top-3">
                   {n.category}
                 </Badge>
