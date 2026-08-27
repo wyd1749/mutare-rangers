@@ -28,7 +28,7 @@ export default function AdminDashboard() {
           <p className="text-sm text-muted-foreground">Welcome back, Admin</p>
         </div>
         <span className="rounded-md border border-border bg-card px-3 py-2 text-sm font-medium">
-          Season 2024 / 2025
+          Season 2026 / 2027
         </span>
       </div>
 
