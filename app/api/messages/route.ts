@@ -35,6 +35,15 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  console.log(
+    "[DEBUG] service key present:",
+    !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    "anon key present:",
+    !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    "service key prefix:",
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 12),
+  )
+
   const supabase = getSupabaseServerClient()
   if (!supabase) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 })
