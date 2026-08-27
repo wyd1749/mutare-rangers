@@ -89,7 +89,7 @@ export default function NewsPage() {
                       src={featured.image || "/placeholder.svg"}
                       alt={featured.title}
                       fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
                     <div className="absolute bottom-0 p-6">
