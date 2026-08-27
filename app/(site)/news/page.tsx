@@ -115,8 +115,8 @@ export default function NewsPage() {
                 <motion.div key={n.id} variants={itemVariants}>
                   <Link href={`/news/${n.id}`}>
                     <Card className="group flex gap-4 overflow-hidden p-3 border-border/80 bg-card/85 backdrop-blur-md transition-all hover:border-accent/50">
-                      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-md">
-                        <Image src={n.image || "/placeholder.svg"} alt="" fill className="object-cover" />
+                      <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded-md">
+                        <Image src={n.image || "/placeholder.svg"} alt="" fill className="object-cover object-top" />
                       </div>
                       <div>
                         <Badge variant="outline">{n.category}</Badge>
