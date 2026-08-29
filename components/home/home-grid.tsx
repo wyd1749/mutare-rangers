@@ -1,11 +1,36 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { news, standings } from "@/lib/data"
+import { news as initialNews, standings as initialStandings, type NewsItem, type Standing } from "@/lib/data"
 
 export function HomeGrid() {
+  const [news, setNews] = useState<NewsItem[]>(initialNews)
+  const [standings, setStandings] = useState<Standing[]>(initialStandings)
+
+  useEffect(() => {
+    let cancelled = false
+
+    Promise.all([
+      fetch("/api/news", { cache: "no-store" }).then((res) => res.json()),
+      fetch("/api/standings", { cache: "no-store" }).then((res) => res.json()),
+    ])
+      .then(([newsData, standingsData]: [NewsItem[], Standing[]]) => {
+        if (cancelled) return
+        if (Array.isArray(newsData) && newsData.length > 0) setNews(newsData)
+        if (Array.isArray(standingsData) && standingsData.length > 0) setStandings(standingsData)
+      })
+      .catch((err) => console.error("Failed to load home grid data", err))
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 -z-10">
@@ -62,7 +87,7 @@ export function HomeGrid() {
                 const isRangers = s.team === "Mutare Rangers"
                 return (
                   <tr
-                    key={s.pos}
+                    key={s.id}
                     className={isRangers ? "text-primary" : "text-foreground"}
                   >
                     <td className="py-2 font-heading font-bold">{s.pos}</td>
