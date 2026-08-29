@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, Pencil, Trash2, X } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Plus, Pencil, Trash2, X, Loader2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { matches as seedMatches, standings as seedStandings, type Match, type Standing } from "@/lib/data"
+import type { Match, Standing } from "@/lib/data"
 
 export default function MatchesAdmin() {
   const [tab, setTab] = useState<"fixtures" | "standings">("fixtures")
@@ -46,9 +46,27 @@ export default function MatchesAdmin() {
 }
 
 function FixturesPanel() {
-  const [rows, setRows] = useState<Match[]>(seedMatches)
+  const [rows, setRows] = useState<Match[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState<{ id: string; opponent: string; date: string; time: string; venue: string; home: boolean; status: Match["status"]; category: Match["category"] } | null>(null)
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/matches")
+      .then((res) => res.json())
+      .then((data: Match[]) => {
+        if (!cancelled) setRows(data)
+      })
+      .catch((err) => console.error("Failed to load matches", err))
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function startAdd() {
     setEditing({ id: "", opponent: "", date: "", time: "18:00", venue: "Mutare Sports Arena", home: true, status: "upcoming", category: "Men" })
@@ -70,44 +88,73 @@ function FixturesPanel() {
     setOpen(true)
   }
 
-  function remove(id: string) {
+  async function remove(id: string) {
+    const prev = rows
     setRows((r) => r.filter((x) => x.id !== id))
+    try {
+      const res = await fetch("/api/matches", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      })
+      if (!res.ok) throw new Error("Delete failed")
+    } catch (err) {
+      console.error(err)
+      setRows(prev) // roll back on failure
+    }
   }
 
-  function save() {
+  async function save() {
     if (!editing || !editing.opponent.trim() || !editing.date.trim()) return
-    if (editing.id) {
-      setRows((r) =>
-        r.map((x) =>
-          x.id === editing.id
-            ? {
-                ...x,
-                date: editing.date,
-                time: editing.time,
-                home: editing.home ? "Mutare Rangers" : editing.opponent,
-                away: editing.home ? editing.opponent : "Mutare Rangers",
-                venue: editing.venue,
-                status: editing.status,
-                category: editing.category,
-              }
-            : x,
-        ),
-      )
-    } else {
-      const m: Match = {
-        id: `m-${Date.now()}`,
-        date: editing.date,
-        time: editing.time,
-        home: editing.home ? "Mutare Rangers" : editing.opponent,
-        away: editing.home ? editing.opponent : "Mutare Rangers",
-        venue: editing.venue,
-        status: "upcoming",
-        category: editing.category,
+    setSaving(true)
+    try {
+      if (editing.id) {
+        const updated: Match = {
+          ...(rows.find((x) => x.id === editing.id) as Match),
+          date: editing.date,
+          time: editing.time,
+          home: editing.home ? "Mutare Rangers" : editing.opponent,
+          away: editing.home ? editing.opponent : "Mutare Rangers",
+          venue: editing.venue,
+          status: editing.status,
+          category: editing.category,
+        }
+        const res = await fetch("/api/matches", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updated),
+        })
+        if (!res.ok) throw new Error("Update failed")
+        const saved: Match = await res.json()
+        setRows((r) => r.map((x) => (x.id === saved.id ? saved : x)))
+      } else {
+        const m: Match = {
+          id: `m-${Date.now()}`,
+          date: editing.date,
+          time: editing.time,
+          home: editing.home ? "Mutare Rangers" : editing.opponent,
+          away: editing.home ? editing.opponent : "Mutare Rangers",
+          venue: editing.venue,
+          status: "upcoming",
+          category: editing.category,
+        }
+        const res = await fetch("/api/matches", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(m),
+        })
+        if (!res.ok) throw new Error("Create failed")
+        const saved: Match = await res.json()
+        setRows((r) => [...r, saved])
       }
-      setRows((r) => [...r, m])
+      setOpen(false)
+      setEditing(null)
+    } catch (err) {
+      console.error(err)
+      // keep the modal open so the user can retry
+    } finally {
+      setSaving(false)
     }
-    setOpen(false)
-    setEditing(null)
   }
 
   return (
@@ -119,56 +166,69 @@ function FixturesPanel() {
       </div>
 
       <Card className="mt-4 p-5">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="pb-3 font-medium">Date</th>
-                <th className="pb-3 font-medium">Fixture</th>
-                <th className="pb-3 font-medium">Venue</th>
-                <th className="pb-3 font-medium">Category</th>
-                <th className="pb-3 font-medium">Status</th>
-                <th className="pb-3 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {rows.map((m) => (
-                <tr key={m.id}>
-                  <td className="py-3 text-muted-foreground">
-                    {m.date}
-                    <span className="block text-xs">{m.time}</span>
-                  </td>
-                  <td className="py-3 font-medium">
-                    {m.home} <span className="text-muted-foreground">vs</span> {m.away}
-                  </td>
-                  <td className="py-3 text-muted-foreground">{m.venue}</td>
-                  <td className="py-3 text-muted-foreground">{m.category}</td>
-                  <td className="py-3">
-                    <Badge variant="outline">{m.status}</Badge>
-                  </td>
-                  <td className="py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => startEdit(m)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
-                        aria-label="Edit match"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => remove(m.id)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
-                        aria-label="Delete match"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading fixtures…
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th className="pb-3 font-medium">Date</th>
+                  <th className="pb-3 font-medium">Fixture</th>
+                  <th className="pb-3 font-medium">Venue</th>
+                  <th className="pb-3 font-medium">Category</th>
+                  <th className="pb-3 font-medium">Status</th>
+                  <th className="pb-3 text-right font-medium">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.map((m) => (
+                  <tr key={m.id}>
+                    <td className="py-3 text-muted-foreground">
+                      {m.date}
+                      <span className="block text-xs">{m.time}</span>
+                    </td>
+                    <td className="py-3 font-medium">
+                      {m.home} <span className="text-muted-foreground">vs</span> {m.away}
+                    </td>
+                    <td className="py-3 text-muted-foreground">{m.venue}</td>
+                    <td className="py-3 text-muted-foreground">{m.category}</td>
+                    <td className="py-3">
+                      <Badge variant="outline">{m.status}</Badge>
+                    </td>
+                    <td className="py-3 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => startEdit(m)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
+                          aria-label="Edit match"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => remove(m.id)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+                          aria-label="Delete match"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {rows.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                      No fixtures scheduled yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       {open && editing && (
@@ -237,11 +297,11 @@ function FixturesPanel() {
               )}
             </div>
             <div className="mt-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" className="bg-transparent" onClick={() => setOpen(false)}>
+              <Button type="button" variant="outline" className="bg-transparent" onClick={() => setOpen(false)} disabled={saving}>
                 Cancel
               </Button>
-              <Button className="bg-primary font-semibold uppercase text-primary-foreground hover:bg-primary/90" onClick={save}>
-                {editing.id ? "Save Changes" : "Save Match"}
+              <Button className="bg-primary font-semibold uppercase text-primary-foreground hover:bg-primary/90" onClick={save} disabled={saving}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : editing.id ? "Save Changes" : "Save Match"}
               </Button>
             </div>
           </Card>
@@ -252,43 +312,112 @@ function FixturesPanel() {
 }
 
 function StandingsPanel() {
-  const [rows, setRows] = useState<Standing[]>(seedStandings)
+  const [rows, setRows] = useState<Standing[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState<Standing | null>(null)
-  const [originalTeam, setOriginalTeam] = useState<string | null>(null)
+  const [isNew, setIsNew] = useState(false)
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/standings")
+      .then((res) => res.json())
+      .then((data: Standing[]) => {
+        if (!cancelled) setRows(resequence(data))
+      })
+      .catch((err) => console.error("Failed to load standings", err))
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function resequence(list: Standing[]) {
     return [...list].sort((a, b) => b.pts - a.pts).map((s, i) => ({ ...s, pos: i + 1 }))
   }
 
+  // Fire-and-forget: persist recalculated positions after a local resequence.
+  function syncPositions(list: Standing[]) {
+    fetch("/api/standings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(list.map((s) => ({ id: s.id, pos: s.pos }))),
+    }).catch((err) => console.error("Failed to sync standings order", err))
+  }
+
   function startAdd() {
-    setEditing({ pos: rows.length + 1, team: "", w: 0, l: 0, pct: ".000", pts: 0 })
-    setOriginalTeam(null)
+    setEditing({ id: `s-${Date.now()}`, pos: rows.length + 1, team: "", w: 0, l: 0, pct: ".000", pts: 0 })
+    setIsNew(true)
     setOpen(true)
   }
 
   function startEdit(s: Standing) {
     setEditing({ ...s })
-    setOriginalTeam(s.team)
+    setIsNew(false)
     setOpen(true)
   }
 
-  function remove(team: string) {
-    setRows((r) => resequence(r.filter((x) => x.team !== team)))
+  async function remove(id: string) {
+    const prev = rows
+    setRows((r) => resequence(r.filter((x) => x.id !== id)))
+    try {
+      const res = await fetch("/api/standings", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      })
+      if (!res.ok) throw new Error("Delete failed")
+      syncPositions(resequence(prev.filter((x) => x.id !== id)))
+    } catch (err) {
+      console.error(err)
+      setRows(prev) // roll back on failure
+    }
   }
 
-  function save() {
+  async function save() {
     if (!editing || !editing.team.trim()) return
-    const games = editing.w + editing.l
-    const pts = editing.w * 2
-    const pct = games > 0 ? (editing.w / games).toFixed(3).replace(/^0/, "") : ".000"
-    const entry = { ...editing, pct, pts }
-    setRows((r) =>
-      resequence(originalTeam ? r.map((x) => (x.team === originalTeam ? entry : x)) : [...r, entry]),
-    )
-    setOpen(false)
-    setEditing(null)
-    setOriginalTeam(null)
+    setSaving(true)
+    try {
+      const games = editing.w + editing.l
+      const pct = games > 0 ? (editing.w / games).toFixed(3).replace(/^0/, "") : ".000"
+      const pts = editing.w * 2
+      const entry: Standing = { ...editing, pct, pts }
+
+      if (isNew) {
+        const res = await fetch("/api/standings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(entry),
+        })
+        if (!res.ok) throw new Error("Create failed")
+        const saved: Standing = await res.json()
+        const next = resequence([...rows, saved])
+        setRows(next)
+        syncPositions(next)
+      } else {
+        const res = await fetch("/api/standings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(entry),
+        })
+        if (!res.ok) throw new Error("Update failed")
+        const saved: Standing = await res.json()
+        const next = resequence(rows.map((x) => (x.id === saved.id ? saved : x)))
+        setRows(next)
+        syncPositions(next)
+      }
+      setOpen(false)
+      setEditing(null)
+      setIsNew(false)
+    } catch (err) {
+      console.error(err)
+      // keep the modal open so the user can retry
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -300,57 +429,70 @@ function StandingsPanel() {
         </Button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="pb-3 font-medium">#</th>
-              <th className="pb-3 font-medium">Team</th>
-              <th className="pb-3 font-medium">W</th>
-              <th className="pb-3 font-medium">L</th>
-              <th className="pb-3 font-medium">PCT</th>
-              <th className="pb-3 font-medium">PTS</th>
-              <th className="pb-3 text-right font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {resequence(rows).map((s) => (
-              <tr key={s.team}>
-                <td className="py-3 font-heading font-bold">{s.pos}</td>
-                <td className={cn("py-3 font-medium", s.team === "Mutare Rangers" && "text-primary")}>{s.team}</td>
-                <td className="py-3 text-muted-foreground">{s.w}</td>
-                <td className="py-3 text-muted-foreground">{s.l}</td>
-                <td className="py-3 text-muted-foreground">{s.pct}</td>
-                <td className="py-3 font-heading font-bold text-accent">{s.pts}</td>
-                <td className="py-3 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      onClick={() => startEdit(s)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
-                      aria-label={`Edit ${s.team}`}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => remove(s.team)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
-                      aria-label={`Delete ${s.team}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading standings…
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="pb-3 font-medium">#</th>
+                <th className="pb-3 font-medium">Team</th>
+                <th className="pb-3 font-medium">W</th>
+                <th className="pb-3 font-medium">L</th>
+                <th className="pb-3 font-medium">PCT</th>
+                <th className="pb-3 font-medium">PTS</th>
+                <th className="pb-3 text-right font-medium">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {rows.map((s) => (
+                <tr key={s.id}>
+                  <td className="py-3 font-heading font-bold">{s.pos}</td>
+                  <td className={cn("py-3 font-medium", s.team === "Mutare Rangers" && "text-primary")}>{s.team}</td>
+                  <td className="py-3 text-muted-foreground">{s.w}</td>
+                  <td className="py-3 text-muted-foreground">{s.l}</td>
+                  <td className="py-3 text-muted-foreground">{s.pct}</td>
+                  <td className="py-3 font-heading font-bold text-accent">{s.pts}</td>
+                  <td className="py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => startEdit(s)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/15 hover:text-primary"
+                        aria-label={`Edit ${s.team}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => remove(s.id)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+                        aria-label={`Delete ${s.team}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                    No teams in the table yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {open && editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4">
           <Card className="w-full max-w-md p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-heading text-xl font-bold text-foreground">Edit Standing</h2>
+              <h2 className="font-heading text-xl font-bold text-foreground">{isNew ? "Add Team" : "Edit Standing"}</h2>
               <button onClick={() => setOpen(false)} aria-label="Close">
                 <X className="size-5 text-muted-foreground" />
               </button>
@@ -371,11 +513,11 @@ function StandingsPanel() {
             </div>
             <p className="mt-2 text-xs text-muted-foreground">Points and win % are calculated automatically from W/L.</p>
             <div className="mt-6 flex justify-end gap-2">
-              <Button type="button" variant="outline" className="bg-transparent" onClick={() => setOpen(false)}>
+              <Button type="button" variant="outline" className="bg-transparent" onClick={() => setOpen(false)} disabled={saving}>
                 Cancel
               </Button>
-              <Button className="bg-primary font-semibold uppercase text-primary-foreground hover:bg-primary/90" onClick={save}>
-                Save Team
+              <Button className="bg-primary font-semibold uppercase text-primary-foreground hover:bg-primary/90" onClick={save} disabled={saving}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Team"}
               </Button>
             </div>
           </Card>

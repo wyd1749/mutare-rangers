@@ -67,14 +67,6 @@ export type Player = {
   }
 }
 
-// NOTE: Player data used to be hardcoded here as a `players` array.
-// It now lives in /data/players.json so it can be edited at runtime
-// through the admin panel (see /lib/players-store.ts and /app/api/players).
-//
-// - In Server Components, read it with getAllPlayers()/getPlayerById()
-//   from "@/lib/players-store".
-// - In Client Components, fetch it from the API: fetch("/api/players").
-
 export type Coach = {
   id: string
   name: string
@@ -128,6 +120,7 @@ export const liveMatch = {
 }
 
 export type Standing = {
+  id: string
   pos: number
   team: string
   w: number
@@ -137,11 +130,11 @@ export type Standing = {
 }
 
 export const standings: Standing[] = [
-  { pos: 1, team: "Mutare Rangers", w: 18, l: 4, pct: ".818", pts: 40 },
-  { pos: 2, team: "Harare Royals", w: 16, l: 6, pct: ".727", pts: 38 },
-  { pos: 3, team: "City Hoopers", w: 15, l: 7, pct: ".682", pts: 37 },
-  { pos: 4, team: "Bulawayo Heat", w: 14, l: 8, pct: ".636", pts: 36 },
-  { pos: 5, team: "Hoops Nation", w: 12, l: 10, pct: ".545", pts: 34 },
+  { id: "s1", pos: 1, team: "Mutare Rangers", w: 18, l: 4, pct: ".818", pts: 40 },
+  { id: "s2", pos: 2, team: "Harare Royals", w: 16, l: 6, pct: ".727", pts: 38 },
+  { id: "s3", pos: 3, team: "City Hoopers", w: 15, l: 7, pct: ".682", pts: 37 },
+  { id: "s4", pos: 4, team: "Bulawayo Heat", w: 14, l: 8, pct: ".636", pts: 36 },
+  { id: "s5", pos: 5, team: "Hoops Nation", w: 12, l: 10, pct: ".545", pts: 34 },
 ]
 
 export type NewsItem = {
