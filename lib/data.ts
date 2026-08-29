@@ -206,10 +206,10 @@ export type Program = {
 }
 
 export const programs: Program[] = [
-  { id: "u12", name: "U12 Program", tagline: "Building Fundamentals", ageRange: "Ages 8-12", description: "Introduces young players to the fundamentals of basketball in a fun, supportive environment.", price: "$40 / month", image: "/images/player-2.png" },
-  { id: "u14", name: "U14 Program", tagline: "Skill Development", ageRange: "Ages 12-14", description: "Focuses on developing core skills, teamwork and basketball IQ for growing athletes.", price: "$50 / month", image: "/images/player-4.png" },
-  { id: "u16", name: "U16 Program", tagline: "Competitive Training", ageRange: "Ages 14-16", description: "Intensive competitive training preparing players for league and tournament play.", price: "$65 / month", image: "/images/player-3.png" },
-  { id: "elite", name: "Elite Program", tagline: "Future Stars", ageRange: "Ages 16+", description: "Elite-level coaching for the most dedicated athletes chasing professional and college careers.", price: "$90 / month", image: "/images/player-1.png" },
+  { id: "u12", name: "U12 Program", tagline: "Building Fundamentals", ageRange: "Ages 8-12", description: "Introduces young players to the fundamentals of basketball in a fun, supportive environment.", price: "$40 / month", image: "/images/academy-u12.png" },
+  { id: "u14", name: "U14 Program", tagline: "Skill Development", ageRange: "Ages 12-14", description: "Focuses on developing core skills, teamwork and basketball IQ for growing athletes.", price: "$50 / month", image: "/images/academy-u14.png" },
+  { id: "u16", name: "U16 Program", tagline: "Competitive Training", ageRange: "Ages 14-16", description: "Intensive competitive training preparing players for league and tournament play.", price: "$65 / month", image: "/images/academy-u16.png" },
+  { id: "elite", name: "Elite Program", tagline: "Future Stars", ageRange: "Ages 16+", description: "Elite-level coaching for the most dedicated athletes chasing professional and college careers.", price: "$90 / month", image: "/images/academy-elite.png" },
 ]
 
 export type Product = {
