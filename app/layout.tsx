@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     siteName: 'Mutare Rangers Basketball Academy',
     images: [
       {
-        url: '/images/og-image.png',
+        url: '/images/og-image.jpg',
         width: 1200,
         height: 630,
         alt: 'Mutare Rangers Basketball Academy',
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     title: 'Mutare Rangers Basketball Academy',
     description:
       'Mutare Rangers Basketball Academy — Where Iron Sharpens Iron. Developing champions, building leaders.',
-    images: ['/images/og-image.png'],
+    images: ['/images/og-image.jpg'],
   },
 }
 
