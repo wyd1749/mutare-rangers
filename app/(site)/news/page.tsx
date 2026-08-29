@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { news as initialNews, type NewsItem } from "@/lib/data"
@@ -21,6 +21,7 @@ const itemVariants = {
 export default function NewsPage() {
   const [newsList, setNewsList] = useState<NewsItem[]>(initialNews)
   const [loading, setLoading] = useState(true)
+  const [featuredIndex, setFeaturedIndex] = useState(0)
 
   useEffect(() => {
     async function fetchNews() {
@@ -41,12 +42,21 @@ export default function NewsPage() {
     fetchNews()
   }, [])
 
+  // Auto-advance the featured (large) article every 5 seconds
+  useEffect(() => {
+    if (newsList.length <= 1) return
+    const interval = setInterval(() => {
+      setFeaturedIndex((prev) => (prev + 1) % newsList.length)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [newsList.length])
+
   if (loading && newsList.length === 0) {
     return <div className="min-h-screen p-8 text-center text-muted-foreground">Loading news...</div>
   }
 
-  const featured = newsList[0]
-  const rest = newsList.slice(1)
+  const featured = newsList[featuredIndex]
+  const rest = newsList.filter((_, i) => i !== featuredIndex)
 
   return (
     <div className="relative min-h-screen">
@@ -82,27 +92,52 @@ export default function NewsPage() {
               transition={{ duration: 0.6, ease: "easeOut" }}
               className="lg:col-span-2"
             >
-              <Link href={`/news/${featured.id}`} className="group">
-                <Card className="overflow-hidden p-0 border-border/80 bg-card/85 backdrop-blur-md">
-                  <div className="relative h-72 overflow-hidden sm:h-96">
-                    <Image
-                      src={featured.image || "/placeholder.svg"}
-                      alt={featured.title}
-                      fill
-                      className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={featured.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                >
+                  <Link href={`/news/${featured.id}`} className="group">
+                    <Card className="overflow-hidden p-0 border-border/80 bg-card/85 backdrop-blur-md">
+                      <div className="relative h-72 overflow-hidden sm:h-96">
+                        <Image
+                          src={featured.image || "/placeholder.svg"}
+                          alt={featured.title}
+                          fill
+                          className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
+                        <div className="absolute bottom-0 p-6">
+                          <Badge variant="accent">{featured.category}</Badge>
+                          <h2 className="mt-3 max-w-lg font-heading text-2xl font-bold uppercase leading-tight group-hover:text-accent sm:text-3xl">
+                            {featured.title}
+                          </h2>
+                          <p className="mt-2 max-w-lg text-sm text-muted-foreground">{featured.excerpt}</p>
+                          <p className="mt-2 text-xs text-muted-foreground">{featured.date}</p>
+                        </div>
+                      </div>
+                    </Card>
+                  </Link>
+                </motion.div>
+              </AnimatePresence>
+
+              {newsList.length > 1 && (
+                <div className="mt-3 flex justify-center gap-1.5 lg:justify-start">
+                  {newsList.map((n, i) => (
+                    <button
+                      key={n.id}
+                      onClick={() => setFeaturedIndex(i)}
+                      aria-label={`Show featured article ${i + 1}`}
+                      className={`h-1.5 rounded-full transition-all ${
+                        i === featuredIndex ? "w-6 bg-accent" : "w-1.5 bg-muted-foreground/40"
+                      }`}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
-                    <div className="absolute bottom-0 p-6">
-                      <Badge variant="accent">{featured.category}</Badge>
-                      <h2 className="mt-3 max-w-lg font-heading text-2xl font-bold uppercase leading-tight group-hover:text-accent sm:text-3xl">
-                        {featured.title}
-                      </h2>
-                      <p className="mt-2 max-w-lg text-sm text-muted-foreground">{featured.excerpt}</p>
-                      <p className="mt-2 text-xs text-muted-foreground">{featured.date}</p>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
+                  ))}
+                </div>
+              )}
             </motion.div>
 
             <motion.div
