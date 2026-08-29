@@ -47,7 +47,7 @@ export default function NewsPage() {
     if (newsList.length <= 1) return
     const interval = setInterval(() => {
       setFeaturedIndex((prev) => (prev + 1) % newsList.length)
-    }, 5000)
+    }, 15000)
     return () => clearInterval(interval)
   }, [newsList.length])
 
