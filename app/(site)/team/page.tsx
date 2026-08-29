@@ -205,7 +205,7 @@ export default function TeamPage() {
                   <motion.div key={p.id} variants={itemVariants}>
                     <Link href={`/team/${p.id}`}>
                       <Card className="group overflow-hidden p-0 border-border/40 bg-card/60 backdrop-blur-md transition-all hover:border-primary">
-                        <div className="relative h-56 overflow-hidden bg-secondary/50">
+                        <div className="relative h-48 overflow-hidden bg-secondary/50">
                           <span className="absolute left-3 top-3 z-10 font-heading text-2xl font-bold text-accent">
                             {p.number}
                           </span>
@@ -213,7 +213,7 @@ export default function TeamPage() {
                             src={p.photo || "/placeholder.svg"}
                             alt={p.name}
                             fill
-                            className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                            className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
                         </div>
@@ -265,8 +265,8 @@ export default function TeamPage() {
                 {teamCoaches.map((c) => (
                   <motion.div key={c.id} variants={itemVariants}>
                     <Card className="overflow-hidden p-0 border-border/40 bg-card/60 backdrop-blur-md">
-                      <div className="relative h-56 overflow-hidden bg-secondary/50">
-                        <Image src={c.photo || "/placeholder.svg"} alt={c.name} fill className="object-cover object-center" />
+                      <div className="relative h-48 overflow-hidden bg-secondary/50">
+                        <Image src={c.photo || "/placeholder.svg"} alt={c.name} fill className="object-cover object-top" />
                         <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
                       </div>
                       <div className="p-3">
