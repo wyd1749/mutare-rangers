@@ -18,8 +18,33 @@ const oswald = Oswald({
 export const metadata: Metadata = {
   title: 'Mutare Rangers Basketball Academy',
   description:
-    'Mutare Rangers Basketball Academy — Where Iron Sharpens Iron. Developing champions, building leaders, strengthening community.',
+    'Mutare Rangers Basketball Academy — Where Iron Sharpens Iron. Developing champions, building leaders.',
   generator: 'v0.app',
+  metadataBase: new URL('https://mutare-rangers.vercel.app'),
+  openGraph: {
+    title: 'Mutare Rangers Basketball Academy',
+    description:
+      'Mutare Rangers Basketball Academy — Where Iron Sharpens Iron. Developing champions, building leaders.',
+    url: 'https://mutare-rangers.vercel.app',
+    siteName: 'Mutare Rangers Basketball Academy',
+    images: [
+      {
+        url: '/images/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Mutare Rangers Basketball Academy',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Mutare Rangers Basketball Academy',
+    description:
+      'Mutare Rangers Basketball Academy — Where Iron Sharpens Iron. Developing champions, building leaders.',
+    images: ['/images/og-image.png'],
+  },
 }
 
 export const viewport: Viewport = {
