@@ -1,18 +1,44 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { liveMatch, matches, playByPlay, standings } from "@/lib/data"
+import { liveMatch, playByPlay, type Match, type Standing } from "@/lib/data"
 
 const filters = ["All", "Men", "Women"] as const
 type FilterValue = (typeof filters)[number]
 
 export default function MatchesPage() {
   const [filter, setFilter] = useState<FilterValue>("All")
+  const [matches, setMatches] = useState<Match[]>([])
+  const [standings, setStandings] = useState<Standing[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    Promise.all([
+      fetch("/api/matches").then((res) => res.json()),
+      fetch("/api/standings").then((res) => res.json()),
+    ])
+      .then(([matchesData, standingsData]: [Match[], Standing[]]) => {
+        if (cancelled) return
+        setMatches(matchesData)
+        setStandings(standingsData)
+      })
+      .catch((err) => console.error("Failed to load match center data", err))
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const filteredMatches = matches.filter((m) => filter === "All" || m.category === filter)
 
   return (
@@ -168,38 +194,42 @@ export default function MatchesPage() {
               </div>
 
               <motion.ul layout className="mt-4 space-y-3">
-                <AnimatePresence mode="popLayout">
-                  {filteredMatches.map((m) => (
-                    <motion.li
-                      key={m.id}
-                      layout
-                      initial={{ opacity: 0, y: 15 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.25 }}
-                      className="rounded-lg border border-border/60 p-3 transition-all duration-200 hover:border-accent/50 hover:bg-muted/20"
-                    >
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>
-                          {m.date} · {m.time}
-                        </span>
-                        <Badge variant="outline" className="border-border/60">{m.status}</Badge>
-                      </div>
-                      <p className="mt-2 text-sm font-semibold">
-                        {m.home} <span className="text-muted-foreground text-xs font-normal">vs</span> {m.away}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{m.venue}</p>
-                      <Button
-                        size="sm"
-                        className="mt-2 h-7 w-full bg-accent px-3 text-xs font-semibold uppercase text-accent-foreground hover:bg-accent/90"
+                {loading ? (
+                  <li className="py-6 text-center text-sm text-muted-foreground">Loading fixtures…</li>
+                ) : (
+                  <AnimatePresence mode="popLayout">
+                    {filteredMatches.map((m) => (
+                      <motion.li
+                        key={m.id}
+                        layout
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.25 }}
+                        className="rounded-lg border border-border/60 p-3 transition-all duration-200 hover:border-accent/50 hover:bg-muted/20"
                       >
-                        Tickets
-                      </Button>
-                    </motion.li>
-                  ))}
-                </AnimatePresence>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>
+                            {m.date} · {m.time}
+                          </span>
+                          <Badge variant="outline" className="border-border/60">{m.status}</Badge>
+                        </div>
+                        <p className="mt-2 text-sm font-semibold">
+                          {m.home} <span className="text-muted-foreground text-xs font-normal">vs</span> {m.away}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{m.venue}</p>
+                        <Button
+                          size="sm"
+                          className="mt-2 h-7 w-full bg-accent px-3 text-xs font-semibold uppercase text-accent-foreground hover:bg-accent/90"
+                        >
+                          Tickets
+                        </Button>
+                      </motion.li>
+                    ))}
+                  </AnimatePresence>
+                )}
 
-                {filteredMatches.length === 0 && (
+                {!loading && filteredMatches.length === 0 && (
                   <motion.li
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -235,24 +265,32 @@ export default function MatchesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
-                  {standings.map((s) => {
-                    const isRangers = s.team === "Mutare Rangers"
-                    return (
-                      <tr 
-                        key={s.pos} 
-                        className={`transition-colors hover:bg-muted/30 ${
-                          isRangers ? "bg-primary/10 text-primary font-semibold" : ""
-                        }`}
-                      >
-                        <td className="py-3 px-1 font-heading font-bold">{s.pos}</td>
-                        <td className="py-3 font-medium">{s.team}</td>
-                        <td className="py-3 text-center text-muted-foreground">{s.w}</td>
-                        <td className="py-3 text-center text-muted-foreground">{s.l}</td>
-                        <td className="py-3 text-center text-muted-foreground">{s.pct}</td>
-                        <td className="py-3 text-center font-heading font-bold">{s.pts}</td>
-                      </tr>
-                    )
-                  })}
+                  {loading ? (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
+                        Loading standings…
+                      </td>
+                    </tr>
+                  ) : (
+                    standings.map((s) => {
+                      const isRangers = s.team === "Mutare Rangers"
+                      return (
+                        <tr
+                          key={s.id}
+                          className={`transition-colors hover:bg-muted/30 ${
+                            isRangers ? "bg-primary/10 text-primary font-semibold" : ""
+                          }`}
+                        >
+                          <td className="py-3 px-1 font-heading font-bold">{s.pos}</td>
+                          <td className="py-3 font-medium">{s.team}</td>
+                          <td className="py-3 text-center text-muted-foreground">{s.w}</td>
+                          <td className="py-3 text-center text-muted-foreground">{s.l}</td>
+                          <td className="py-3 text-center text-muted-foreground">{s.pct}</td>
+                          <td className="py-3 text-center font-heading font-bold">{s.pts}</td>
+                        </tr>
+                      )
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
