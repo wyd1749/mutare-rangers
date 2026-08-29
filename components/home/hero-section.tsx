@@ -95,7 +95,7 @@ export function HeroSection() {
             fill
             priority
             sizes="100vw"
-            className="object-cover object-right"
+            className="object-cover object-center lg:object-right"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/30" />
