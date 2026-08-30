@@ -12,6 +12,7 @@ const nav = [
   { label: "Home", href: "/" },
   { label: "News", href: "/news" },
   { label: "Matches", href: "/matches" },
+  { label: "Watch", href: "/watch" },
   { label: "Team", href: "/team" },
   { label: "Academy", href: "/academy" },
   { label: "Shop", href: "/shop" },

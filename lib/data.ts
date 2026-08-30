@@ -6,6 +6,33 @@ export type Team = {
   description: string
 }
 
+export type Video = {
+  id: string
+  title: string
+  platform: "youtube" | "tiktok" | "facebook" | "instagram"
+  url: string
+  category: "Highlights" | "Live" | "Interview"
+  date: string
+}
+
+export const videos: Video[] = [
+  { id: "v1", title: "Rangers vs City Hoopers - Full Highlights", platform: "youtube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", category: "Highlights", date: "May 18, 2025" },
+  { id: "v2", title: "Coach Ncube Post-Match Interview", platform: "youtube", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", category: "Interview", date: "May 19, 2025" },
+]
+
+export type Advert = {
+  id: string
+  title: string
+  image: string
+  sponsor: string
+  link: string
+  active: boolean
+}
+
+export const adverts: Advert[] = [
+  { id: "ad1", title: "Official Kit Partner", image: "/images/jersey.png", sponsor: "Molten", link: "https://example.com", active: true },
+]
+
 export const teams: Team[] = [
   {
     id: "senior-boys",
