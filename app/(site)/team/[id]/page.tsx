@@ -95,7 +95,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
           <div className="grid gap-6 md:grid-cols-2">
             <Card className="p-5">
               <h3 className="font-heading text-sm font-bold uppercase tracking-wide text-muted-foreground">
-                2024 / 2025 Season Stats
+                2026 / 2027 Season Stats
               </h3>
               <div className="mt-4 grid grid-cols-3 gap-4">
                 {primaryStats.map((s) => (
