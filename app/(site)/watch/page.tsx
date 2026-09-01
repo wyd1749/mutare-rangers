@@ -48,7 +48,19 @@ export default function WatchPage() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <Image
+          src="/images/news-bg.png"
+          alt=""
+          fill
+          priority
+          aria-hidden
+          className="object-cover object-center opacity-100 brightness-110"
+        />
+        <div className="absolute inset-0 bg-background/20" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
