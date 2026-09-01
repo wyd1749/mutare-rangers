@@ -48,7 +48,7 @@ export default function WatchPage() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="absolute inset-0 z-0 overflow-hidden">
+      <div className="fixed inset-0 z-0 overflow-hidden">
         <Image
           src="/images/news-bg.png"
           alt=""
