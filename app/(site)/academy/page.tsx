@@ -8,7 +8,7 @@ import { Check } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { programs as seedPrograms, news as seedNews, type Program, type NewsItem } from "@/lib/data"
+import { type Program, type NewsItem } from "@/lib/data"
 
 const perks = [
   "Certified professional coaches",
@@ -39,8 +39,10 @@ const itemVariants = {
 }
 
 export default function AcademyPage() {
-  const [programs, setPrograms] = useState<Program[]>(seedPrograms)
-  const [news, setNews] = useState<NewsItem[]>(seedNews)
+  // Initialized with empty arrays to prevent stale data flash from lib/data
+  const [programs, setPrograms] = useState<Program[]>([])
+  const [news, setNews] = useState<NewsItem[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -51,14 +53,16 @@ export default function AcademyPage() {
         ])
         if (programsRes.ok) {
           const data = await programsRes.json()
-          if (Array.isArray(data) && data.length > 0) setPrograms(data)
+          if (Array.isArray(data)) setPrograms(data)
         }
         if (newsRes.ok) {
           const data = await newsRes.json()
-          if (Array.isArray(data) && data.length > 0) setNews(data)
+          if (Array.isArray(data)) setNews(data)
         }
       } catch (err) {
         console.error("Failed to load academy data", err)
+      } finally {
+        setLoading(false)
       }
     }
     loadData()
