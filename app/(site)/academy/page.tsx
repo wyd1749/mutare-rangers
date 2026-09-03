@@ -17,7 +17,6 @@ const perks = [
   "Pathway to college & pro basketball",
 ]
 
-// Container animation config for staggered program reveals
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -28,7 +27,6 @@ const containerVariants = {
   },
 }
 
-// Item animation config for individual cards
 const itemVariants = {
   hidden: { opacity: 0, y: 30 },
   visible: {
@@ -39,7 +37,6 @@ const itemVariants = {
 }
 
 export default function AcademyPage() {
-  // Initialized with empty arrays to prevent stale data flash from lib/data
   const [programs, setPrograms] = useState<Program[]>([])
   const [news, setNews] = useState<NewsItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -80,7 +77,6 @@ export default function AcademyPage() {
           aria-hidden
           className="object-cover object-top opacity-100 brightness-110"
         />
-        {/* Soft overlay matching News page */}
         <div className="absolute inset-0 bg-background/10 pointer-events-none" />
       </div>
 
@@ -91,7 +87,7 @@ export default function AcademyPage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="max-w-2xl"
+          className="max-w-2xl mx-auto text-center"
         >
           <Badge variant="accent">Academy</Badge>
           <h1 className="mt-3 font-heading text-4xl font-bold uppercase tracking-tight sm:text-5xl">
@@ -103,15 +99,19 @@ export default function AcademyPage() {
           </p>
         </motion.div>
 
-        {/* PROGRAM CARDS STAGGERED REVEAL */}
+        {/* PROGRAM CARDS CENTERED GRID */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+          className="mt-8 flex flex-wrap justify-center gap-5"
         >
           {programs.map((p) => (
-            <motion.div key={p.id} variants={itemVariants}>
+            <motion.div 
+              key={p.id} 
+              variants={itemVariants}
+              className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(25%-15px)] max-w-sm"
+            >
               <Card className="flex flex-col overflow-hidden p-0 border-border/40 bg-card/60 backdrop-blur-md transition-all hover:border-accent/50 h-full">
                 <div className="relative h-44 overflow-hidden">
                   <Image 
