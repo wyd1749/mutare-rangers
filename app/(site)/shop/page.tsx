@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ShoppingBag } from "lucide-react"
-import { products as initialProducts, type Product } from "@/lib/data"
+import { type Product } from "@/lib/data"
 
 export default function ShopPage() {
-  const [items, setItems] = useState<Product[]>(initialProducts)
+  // Initialized with empty array to prevent stale product flash
+  const [items, setItems] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -18,7 +19,7 @@ export default function ShopPage() {
         const res = await fetch("/api/products", { cache: "no-store" })
         if (res.ok) {
           const data = await res.json()
-          if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(data)) {
             setItems(data)
           }
         }
@@ -43,14 +44,17 @@ export default function ShopPage() {
           </p>
         </div>
 
-        {loading && items.length === 0 ? (
+        {loading ? (
           <div className="py-20 text-center text-muted-foreground">Loading products...</div>
         ) : items.length === 0 ? (
           <div className="py-20 text-center text-muted-foreground">No products available.</div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="flex flex-wrap justify-center gap-6">
             {items.map((product) => (
-              <Card key={product.id} className="group flex flex-col overflow-hidden border-border/80 bg-card/85 p-0 backdrop-blur-md">
+              <Card 
+                key={product.id} 
+                className="group flex w-full max-w-xs flex-col overflow-hidden border-border/80 bg-card/85 p-0 backdrop-blur-md sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)]"
+              >
                 <div className="relative h-60 w-full overflow-hidden bg-secondary/20 p-4">
                   <Image
                     src={product.image || "/placeholder.svg"}
