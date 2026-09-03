@@ -42,7 +42,7 @@ export default function NewsPage() {
     fetchNews()
   }, [])
 
-  // Auto-advance the featured (large) article every 5 seconds
+  // Auto-advance the featured (large) article every 15 seconds
   useEffect(() => {
     if (newsList.length <= 1) return
     const interval = setInterval(() => {
@@ -60,8 +60,8 @@ export default function NewsPage() {
 
   return (
     <div className="relative min-h-screen">
-      {/* 100% VISIBILITY BACKGROUND LAYER */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
+      {/* STATIC BACKGROUND LAYER - stays fixed while content scrolls */}
+      <div className="fixed inset-0 z-0 overflow-hidden">
         <Image
           src="/images/news-bg.png"
           alt=""
