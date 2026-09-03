@@ -103,12 +103,14 @@ export default function NewsPage() {
                   <Link href={`/news/${featured.id}`} className="group">
                     <Card className="overflow-hidden p-0 border-border/80 bg-card/85 backdrop-blur-md">
                       <div className="relative h-72 overflow-hidden sm:h-96">
-                        <Image
-                          src={featured.image || "/placeholder.svg"}
-                          alt={featured.title}
-                          fill
-                          className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
-                        />
+                        <div className="absolute inset-0 animate-hero-zoom">
+                          <Image
+                            src={featured.image || "/placeholder.svg"}
+                            alt={featured.title}
+                            fill
+                            className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                          />
+                        </div>
                         <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
                         <div className="absolute bottom-0 p-6">
                           <Badge variant="accent">{featured.category}</Badge>
