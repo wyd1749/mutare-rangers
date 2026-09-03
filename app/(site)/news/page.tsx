@@ -6,7 +6,7 @@ import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { news as initialNews, type NewsItem } from "@/lib/data"
+import { type NewsItem } from "@/lib/data"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -19,7 +19,8 @@ const itemVariants = {
 }
 
 export default function NewsPage() {
-  const [newsList, setNewsList] = useState<NewsItem[]>(initialNews)
+  // Initialized to an empty array so old lib/data articles don't flicker on load
+  const [newsList, setNewsList] = useState<NewsItem[]>([])
   const [loading, setLoading] = useState(true)
   const [featuredIndex, setFeaturedIndex] = useState(0)
 
