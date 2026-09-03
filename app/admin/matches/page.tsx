@@ -383,7 +383,7 @@ function StandingsPanel() {
     try {
       const games = editing.w + editing.l
       const pct = games > 0 ? (editing.w / games).toFixed(3).replace(/^0/, "") : ".000"
-      const pts = editing.w * 2
+      const pts = editing.w * 2 + editing.l * 1
       const entry: Standing = { ...editing, pct, pts }
 
       if (isNew) {
