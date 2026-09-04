@@ -15,6 +15,7 @@ const nav = [
   { label: "Watch", href: "/watch" },
   { label: "Team", href: "/team" },
   { label: "Academy", href: "/academy" },
+  { label: "About", href: "/about" },
   { label: "Shop", href: "/shop" },
   { label: "Contact", href: "/contact" },
 ]
