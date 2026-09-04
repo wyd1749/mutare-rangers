@@ -175,7 +175,7 @@ export default function AcademyPage() {
             <h2 className="font-heading text-2xl font-bold uppercase tracking-wide">Latest Academy News</h2>
             <ul className="mt-4 divide-y divide-border">
               {news
-                .filter((n) => n.category === "Academy")
+                .filter((n) => n.category?.trim().toLowerCase() === "academy")
                 .map((n) => (
                   <li key={n.id}>
                     <Link href={`/news/${n.id}`} className="group flex items-center gap-3 py-3">
@@ -184,7 +184,7 @@ export default function AcademyPage() {
                         alt=""
                         width={56}
                         height={56}
-                        className="h-14 w-14 shrink-0 rounded-md object-cover"
+                        className="h-14 w-14 shrink-0 rounded-md object-cover object-top"
                       />
                       <div>
                         <p className="text-sm font-semibold leading-snug group-hover:text-accent">{n.title}</p>
