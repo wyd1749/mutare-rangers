@@ -13,6 +13,7 @@ import {
   Home,
   Inbox,
   Clapperboard,
+  Landmark,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useContactMessages } from "@/lib/messages-store"
@@ -23,6 +24,7 @@ const links = [
   { label: "Matches & Standings", href: "/admin/matches", icon: CalendarDays },
   { label: "News", href: "/admin/news", icon: Newspaper },
   { label: "Academy", href: "/admin/academy", icon: GraduationCap },
+  { label: "About Us", href: "/admin/about", icon: Landmark },
   { label: "Watch & Adverts", href: "/admin/watch-adverts", icon: Clapperboard },
   { label: "Shop", href: "/admin/shop", icon: ShoppingBag },
   { label: "Received Messages", href: "/admin/messages", icon: Inbox },
