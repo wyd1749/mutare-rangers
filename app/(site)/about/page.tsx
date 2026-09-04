@@ -68,7 +68,20 @@ export default function AboutPage() {
 
   return (
     <div className="relative min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      {/* FIXED BACKGROUND LAYER — stays in place while content scrolls */}
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        <Image
+          src="/images/news-bg.png"
+          alt=""
+          fill
+          priority
+          aria-hidden
+          className="object-cover object-top opacity-100 brightness-110"
+        />
+        <div className="absolute inset-0 bg-background/20 pointer-events-none" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
