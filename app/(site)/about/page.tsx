@@ -97,8 +97,7 @@ export default function AboutPage() {
             <motion.div
               variants={containerVariants}
               initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
+              animate="visible"
               className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
             >
               {trophies.map((t) => (
@@ -132,8 +131,7 @@ export default function AboutPage() {
             <motion.div
               variants={containerVariants}
               initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
+              animate="visible"
               className="mt-6 space-y-3"
             >
               {achievements.map((a) => (
@@ -168,8 +166,7 @@ export default function AboutPage() {
             <motion.div
               variants={containerVariants}
               initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
+              animate="visible"
               className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
             >
               {board.map((m) => (
