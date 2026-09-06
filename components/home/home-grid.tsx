@@ -6,23 +6,29 @@ import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { news as initialNews, standings as initialStandings, type NewsItem, type Standing } from "@/lib/data"
+import { news as initialNews, standings as initialStandings, type NewsItem, type Standing, type League } from "@/lib/data"
+
+// Which single league the homepage widget spotlights. Change this to
+// "juveniles" or "women" if you'd rather feature one of those instead.
+const HOME_LEAGUE: League = "major"
 
 export function HomeGrid() {
   const [news, setNews] = useState<NewsItem[]>(initialNews)
-  const [standings, setStandings] = useState<Standing[]>(initialStandings)
+  const [standings, setStandings] = useState<Standing[]>(
+    initialStandings.filter((s) => s.league === HOME_LEAGUE),
+  )
 
   useEffect(() => {
     let cancelled = false
 
     Promise.all([
       fetch("/api/news", { cache: "no-store" }).then((res) => res.json()),
-      fetch("/api/standings", { cache: "no-store" }).then((res) => res.json()),
+      fetch(`/api/standings?league=${HOME_LEAGUE}`, { cache: "no-store" }).then((res) => res.json()),
     ])
       .then(([newsData, standingsData]: [NewsItem[], Standing[]]) => {
         if (cancelled) return
         if (Array.isArray(newsData) && newsData.length > 0) setNews(newsData)
-        if (Array.isArray(standingsData) && standingsData.length > 0) setStandings(standingsData)
+        if (Array.isArray(standingsData)) setStandings(standingsData)
       })
       .catch((err) => console.error("Failed to load home grid data", err))
 
@@ -83,21 +89,29 @@ export function HomeGrid() {
               </tr>
             </thead>
             <tbody>
-              {standings.map((s) => {
-                const isRangers = s.team === "Mutare Rangers"
-                return (
-                  <tr
-                    key={s.id}
-                    className={isRangers ? "text-primary" : "text-foreground"}
-                  >
-                    <td className="py-2 font-heading font-bold">{s.pos}</td>
-                    <td className="py-2 font-medium">{s.team}</td>
-                    <td className="py-2 text-center text-muted-foreground">{s.w}</td>
-                    <td className="py-2 text-center text-muted-foreground">{s.l}</td>
-                    <td className="py-2 text-center font-heading font-bold">{s.pts}</td>
-                  </tr>
-                )
-              })}
+              {standings.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-4 text-center text-xs text-muted-foreground">
+                    No standings yet.
+                  </td>
+                </tr>
+              ) : (
+                standings.map((s) => {
+                  const isRangers = s.team === "Mutare Rangers"
+                  return (
+                    <tr
+                      key={s.id}
+                      className={isRangers ? "text-primary" : "text-foreground"}
+                    >
+                      <td className="py-2 font-heading font-bold">{s.pos}</td>
+                      <td className="py-2 font-medium">{s.team}</td>
+                      <td className="py-2 text-center text-muted-foreground">{s.w}</td>
+                      <td className="py-2 text-center text-muted-foreground">{s.l}</td>
+                      <td className="py-2 text-center font-heading font-bold">{s.pts}</td>
+                    </tr>
+                  )
+                })
+              )}
             </tbody>
           </table>
         </Card>
