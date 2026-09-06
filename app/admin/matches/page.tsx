@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { Match, Standing } from "@/lib/data"
+import { leagues, type Match, type Standing, type League } from "@/lib/data"
 
 export default function MatchesAdmin() {
   const [tab, setTab] = useState<"fixtures" | "standings">("fixtures")
@@ -312,6 +312,7 @@ function FixturesPanel() {
 }
 
 function StandingsPanel() {
+  const [league, setLeague] = useState<League>("juveniles")
   const [rows, setRows] = useState<Standing[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -321,7 +322,8 @@ function StandingsPanel() {
 
   useEffect(() => {
     let cancelled = false
-    fetch("/api/standings")
+    setLoading(true)
+    fetch(`/api/standings?league=${league}`)
       .then((res) => res.json())
       .then((data: Standing[]) => {
         if (!cancelled) setRows(resequence(data))
@@ -333,7 +335,7 @@ function StandingsPanel() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [league])
 
   function resequence(list: Standing[]) {
     return [...list].sort((a, b) => b.pts - a.pts).map((s, i) => ({ ...s, pos: i + 1 }))
@@ -349,7 +351,7 @@ function StandingsPanel() {
   }
 
   function startAdd() {
-    setEditing({ id: `s-${Date.now()}`, pos: rows.length + 1, team: "", w: 0, l: 0, pct: ".000", pts: 0 })
+    setEditing({ id: `s-${Date.now()}`, pos: rows.length + 1, team: "", w: 0, l: 0, pct: ".000", pts: 0, league })
     setIsNew(true)
     setOpen(true)
   }
@@ -422,11 +424,27 @@ function StandingsPanel() {
 
   return (
     <Card className="mt-4 p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{rows.length} teams in the table</p>
-        <Button onClick={startAdd} className="bg-accent font-semibold uppercase text-accent-foreground hover:bg-accent/90">
-          <Plus className="mr-1 h-4 w-4" /> Add Team
-        </Button>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex rounded-md border border-border p-1">
+          {leagues.map((l) => (
+            <button
+              key={l.id}
+              onClick={() => setLeague(l.id)}
+              className={cn(
+                "rounded px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors",
+                league === l.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-muted-foreground">{rows.length} teams in the table</p>
+          <Button onClick={startAdd} className="bg-accent font-semibold uppercase text-accent-foreground hover:bg-accent/90">
+            <Plus className="mr-1 h-4 w-4" /> Add Team
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -501,6 +519,20 @@ function StandingsPanel() {
               <div className="sm:col-span-2">
                 <Label>Team</Label>
                 <Input value={editing.team} onChange={(v) => setEditing({ ...editing, team: v })} placeholder="Team name" />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>League</Label>
+                <select
+                  value={editing.league}
+                  onChange={(e) => setEditing({ ...editing, league: e.target.value as League })}
+                  className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                >
+                  {leagues.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <Label>Wins</Label>
