@@ -146,6 +146,15 @@ export const liveMatch = {
   awayFouls: 5,
 }
 
+// Three separate league tables shown on the public standings page.
+export type League = "juveniles" | "women" | "major"
+
+export const leagues: { id: League; label: string }[] = [
+  { id: "juveniles", label: "Juveniles" },
+  { id: "women", label: "Women League" },
+  { id: "major", label: "Major League" },
+]
+
 export type Standing = {
   id: string
   pos: number
@@ -154,14 +163,15 @@ export type Standing = {
   l: number
   pct: string
   pts: number
+  league: League
 }
 
 export const standings: Standing[] = [
-  { id: "s1", pos: 1, team: "Mutare Rangers", w: 18, l: 4, pct: ".818", pts: 40 },
-  { id: "s2", pos: 2, team: "Harare Royals", w: 16, l: 6, pct: ".727", pts: 38 },
-  { id: "s3", pos: 3, team: "City Hoopers", w: 15, l: 7, pct: ".682", pts: 37 },
-  { id: "s4", pos: 4, team: "Bulawayo Heat", w: 14, l: 8, pct: ".636", pts: 36 },
-  { id: "s5", pos: 5, team: "Hoops Nation", w: 12, l: 10, pct: ".545", pts: 34 },
+  { id: "s1", pos: 1, team: "Mutare Rangers", w: 18, l: 4, pct: ".818", pts: 40, league: "juveniles" },
+  { id: "s2", pos: 2, team: "Harare Royals", w: 16, l: 6, pct: ".727", pts: 38, league: "juveniles" },
+  { id: "s3", pos: 3, team: "City Hoopers", w: 15, l: 7, pct: ".682", pts: 37, league: "juveniles" },
+  { id: "s4", pos: 4, team: "Bulawayo Heat", w: 14, l: 8, pct: ".636", pts: 36, league: "juveniles" },
+  { id: "s5", pos: 5, team: "Hoops Nation", w: 12, l: 10, pct: ".545", pts: 34, league: "juveniles" },
 ]
 
 export type NewsItem = {

@@ -1,18 +1,25 @@
 import { NextResponse } from "next/server"
-import { standings as initialStandings, type Standing } from "@/lib/data"
+import { standings as initialStandings, type Standing, type League } from "@/lib/data"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 
 // Global in-memory data store for local dev
 let standingsStore: Standing[] = [...initialStandings]
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const league = searchParams.get("league") as League | null
+
   const supabase = getSupabaseServerClient()
   if (supabase) {
-    const { data, error } = await supabase.from("standings").select("*").order("pos", { ascending: true })
+    let query = supabase.from("standings").select("*").order("pos", { ascending: true })
+    if (league) query = query.eq("league", league)
+    const { data, error } = await query
     if (error) return NextResponse.json({ error: "Failed to load standings" }, { status: 500 })
     return NextResponse.json(data ?? [])
   }
-  return NextResponse.json(standingsStore)
+
+  const filtered = league ? standingsStore.filter((s) => s.league === league) : standingsStore
+  return NextResponse.json(filtered)
 }
 
 export async function POST(req: Request) {
@@ -54,7 +61,8 @@ export async function PUT(req: Request) {
 
 // This route also handles bulk resequencing (recalculating `pos` for every
 // row after a sort). Passing an array instead of a single object triggers
-// a bulk upsert of positions only.
+// a bulk upsert of positions only. Resequencing is scoped per-league by
+// the caller (only send the rows for the league being reordered).
 export async function PATCH(req: Request) {
   try {
     const rows: Pick<Standing, "id" | "pos">[] = await req.json()

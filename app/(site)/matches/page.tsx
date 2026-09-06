@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { liveMatch, playByPlay, type Match, type Standing } from "@/lib/data"
+import { liveMatch, playByPlay, leagues, type Match, type Standing, type League } from "@/lib/data"
 
 const filters = ["All", "Men", "Women"] as const
 type FilterValue = (typeof filters)[number]
@@ -14,30 +14,50 @@ type FilterValue = (typeof filters)[number]
 export default function MatchesPage() {
   const [filter, setFilter] = useState<FilterValue>("All")
   const [matches, setMatches] = useState<Match[]>([])
-  const [standings, setStandings] = useState<Standing[]>([])
-  const [loading, setLoading] = useState(true)
+  const [matchesLoading, setMatchesLoading] = useState(true)
 
+  const [league, setLeague] = useState<League>("juveniles")
+  const [standings, setStandings] = useState<Standing[]>([])
+  const [standingsLoading, setStandingsLoading] = useState(true)
+
+  // Fixtures load once — not league-scoped.
   useEffect(() => {
     let cancelled = false
 
-    Promise.all([
-      fetch("/api/matches").then((res) => res.json()),
-      fetch("/api/standings").then((res) => res.json()),
-    ])
-      .then(([matchesData, standingsData]: [Match[], Standing[]]) => {
-        if (cancelled) return
-        setMatches(matchesData)
-        setStandings(standingsData)
+    fetch("/api/matches")
+      .then((res) => res.json())
+      .then((data: Match[]) => {
+        if (!cancelled) setMatches(data)
       })
-      .catch((err) => console.error("Failed to load match center data", err))
+      .catch((err) => console.error("Failed to load fixtures", err))
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setMatchesLoading(false)
       })
 
     return () => {
       cancelled = true
     }
   }, [])
+
+  // Standings refetch whenever the selected league tab changes.
+  useEffect(() => {
+    let cancelled = false
+    setStandingsLoading(true)
+
+    fetch(`/api/standings?league=${league}`)
+      .then((res) => res.json())
+      .then((data: Standing[]) => {
+        if (!cancelled) setStandings(data)
+      })
+      .catch((err) => console.error("Failed to load standings", err))
+      .finally(() => {
+        if (!cancelled) setStandingsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [league])
 
   const filteredMatches = matches.filter((m) => filter === "All" || m.category === filter)
 
@@ -88,7 +108,7 @@ export default function MatchesPage() {
               <Card className="relative overflow-hidden border-border/40 bg-card/60 p-6 backdrop-blur-md shadow-xl transition-all duration-300 hover:border-primary/40">
                 <div className="flex items-center justify-between">
                   <h2 className="font-heading text-lg font-bold uppercase tracking-wide">Live Game</h2>
-                  
+
                   {/* Radar Live Indicator */}
                   <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase text-primary">
                     <span className="relative flex h-2.5 w-2.5">
@@ -143,7 +163,7 @@ export default function MatchesPage() {
                   className="h-64 sm:h-80 w-full object-cover block transition-transform duration-700 ease-out group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent pointer-events-none" />
-                
+
                 <div className="absolute bottom-4 left-5 right-5 flex items-end justify-between">
                   <div>
                     <span className="font-heading text-xs font-bold uppercase tracking-widest text-accent">Mutare Rangers</span>
@@ -194,7 +214,7 @@ export default function MatchesPage() {
               </div>
 
               <motion.ul layout className="mt-4 space-y-3">
-                {loading ? (
+                {matchesLoading ? (
                   <li className="py-6 text-center text-sm text-muted-foreground">Loading fixtures…</li>
                 ) : (
                   <AnimatePresence mode="popLayout">
@@ -229,7 +249,7 @@ export default function MatchesPage() {
                   </AnimatePresence>
                 )}
 
-                {!loading && filteredMatches.length === 0 && (
+                {!matchesLoading && filteredMatches.length === 0 && (
                   <motion.li
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -251,7 +271,35 @@ export default function MatchesPage() {
           transition={{ duration: 0.6, ease: "easeOut" }}
         >
           <Card className="mt-6 p-5 border-border/40 bg-card/60 backdrop-blur-md">
-            <h2 className="font-heading text-lg font-bold uppercase tracking-wide">League Standings</h2>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h2 className="font-heading text-lg font-bold uppercase tracking-wide">League Standings</h2>
+
+              {/* League tabs */}
+              <div className="flex rounded-md border border-border/60 bg-secondary/40 p-1 relative">
+                {leagues.map((l) => {
+                  const isActive = league === l.id
+                  return (
+                    <button
+                      key={l.id}
+                      onClick={() => setLeague(l.id)}
+                      className={`relative rounded px-4 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors z-10 ${
+                        isActive ? "text-accent-foreground" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeLeagueTab"
+                          className="absolute inset-0 bg-accent rounded shadow-sm"
+                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        />
+                      )}
+                      <span className="relative z-10">{l.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[520px] text-sm">
                 <thead>
@@ -265,10 +313,16 @@ export default function MatchesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
-                  {loading ? (
+                  {standingsLoading ? (
                     <tr>
                       <td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
                         Loading standings…
+                      </td>
+                    </tr>
+                  ) : standings.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
+                        No standings yet for this league.
                       </td>
                     </tr>
                   ) : (
