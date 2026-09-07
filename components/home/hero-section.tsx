@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Trophy, Users, ClipboardList, Heart, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { teamStats, matches, type Player } from "@/lib/data"
+import { teamStats, matches, type Player, type Match } from "@/lib/data"
 
 type TrophyItem = {
   id: string
@@ -66,7 +66,26 @@ function AnimatedStat({ raw, active }: { raw: string | number; active: boolean }
 }
 
 export function HeroSection() {
-  const nextMatch = matches[0]
+  // Real next match, fetched from the same API the Match Center page uses.
+  // Falls back to the static matches[0] entry until this resolves, and
+  // stays on the fallback if the request fails or nothing is upcoming.
+  const [nextMatch, setNextMatch] = useState<Match>(matches[0])
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/matches")
+      .then((res) => res.json())
+      .then((data: Match[]) => {
+        if (cancelled || !Array.isArray(data)) return
+        const upcoming = data.find((m) => m.status === "upcoming")
+        if (upcoming) setNextMatch(upcoming)
+      })
+      .catch((err) => console.error("Failed to load next match", err))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const [statsActive, setStatsActive] = useState(false)
   const statsRef = useRef<HTMLDivElement>(null)
 
@@ -203,9 +222,9 @@ export function HeroSection() {
         <div className="mt-12 w-full max-w-sm rounded-xl border border-border bg-card/90 p-5 backdrop-blur lg:absolute lg:right-6 lg:top-1/2 lg:mt-0 lg:-translate-y-1/2">
           <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-accent">Next Match</p>
           <div className="mt-4 flex items-center justify-between">
-            <TeamBadge name="Mutare Rangers" />
+            <TeamBadge name={nextMatch.home} />
             <span className="font-heading text-2xl font-bold text-muted-foreground">VS</span>
-            <TeamBadge name="City Hoopers" />
+            <TeamBadge name={nextMatch.away} />
           </div>
           <div className="mt-4 border-t border-border pt-4 text-center">
             <p className="font-heading text-lg font-bold">
