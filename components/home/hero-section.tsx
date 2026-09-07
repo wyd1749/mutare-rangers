@@ -7,6 +7,14 @@ import { Trophy, Users, ClipboardList, Heart, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { teamStats, matches, type Player } from "@/lib/data"
 
+type TrophyItem = {
+  id: string
+  name: string
+  competition: string
+  year: string
+  image: string
+}
+
 /** Splits "15K+" into { number: 15, suffix: "K+" }, or "12" into { number: 12, suffix: "" } */
 function splitStat(raw: string | number) {
   const str = String(raw)
@@ -80,15 +88,29 @@ export function HeroSection() {
     }
   }, [])
 
-  // TODO: Trophies currently pulls the static teamStats.trophies number.
-  // Once the About page's Trophy Cabinet component is shared, this should
-  // count real entries the same way playerCount does above.
-  //
+  // Real trophy count, fetched from the same API the About page's Trophy
+  // Cabinet uses. Falls back to the static teamStats.trophies number until
+  // this resolves, and stays on the fallback if the request fails.
+  const [trophyCount, setTrophyCount] = useState(teamStats.trophies)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/trophies", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: TrophyItem[]) => {
+        if (!cancelled && Array.isArray(data)) setTrophyCount(data.length)
+      })
+      .catch((err) => console.error("Failed to load trophy count", err))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   // TODO: Coaches & Staff currently pulls the static teamStats.coaches
   // number. Once the Team page (or its API route) is shared, this should
-  // fetch and count real coaches the same way.
+  // fetch and count real coaches the same way as trophies/players above.
   const stats = [
-    { icon: Trophy, raw: teamStats.trophies, label: "Trophies Won" },
+    { icon: Trophy, raw: trophyCount, label: "Trophies Won" },
     { icon: Users, raw: playerCount, label: "Players" },
     { icon: ClipboardList, raw: teamStats.coaches, label: "Coaches & Staff" },
     { icon: Heart, raw: teamStats.fans, label: "Fans" },
