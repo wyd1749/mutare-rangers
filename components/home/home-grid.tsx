@@ -6,17 +6,15 @@ import Image from "next/image"
 import { ArrowRight } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { news as initialNews, standings as initialStandings, type NewsItem, type Standing, type League } from "@/lib/data"
+import { type NewsItem, type Standing, type League } from "@/lib/data"
 
 // Which single league the homepage widget spotlights. Change this to
 // "juveniles" or "women" if you'd rather feature one of those instead.
 const HOME_LEAGUE: League = "major"
 
 export function HomeGrid() {
-  const [news, setNews] = useState<NewsItem[]>(initialNews)
-  const [standings, setStandings] = useState<Standing[]>(
-    initialStandings.filter((s) => s.league === HOME_LEAGUE),
-  )
+  const [news, setNews] = useState<NewsItem[] | null>(null)
+  const [standings, setStandings] = useState<Standing[] | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -27,15 +25,24 @@ export function HomeGrid() {
     ])
       .then(([newsData, standingsData]: [NewsItem[], Standing[]]) => {
         if (cancelled) return
-        if (Array.isArray(newsData) && newsData.length > 0) setNews(newsData)
-        if (Array.isArray(standingsData)) setStandings(standingsData)
+        setNews(Array.isArray(newsData) ? newsData : [])
+        setStandings(Array.isArray(standingsData) ? standingsData : [])
       })
-      .catch((err) => console.error("Failed to load home grid data", err))
+      .catch((err) => {
+        console.error("Failed to load home grid data", err)
+        if (!cancelled) {
+          setNews([])
+          setStandings([])
+        }
+      })
 
     return () => {
       cancelled = true
     }
   }, [])
+
+  const newsLoading = news === null
+  const standingsLoading = standings === null
 
   return (
     <section className="relative overflow-hidden">
@@ -54,66 +61,97 @@ export function HomeGrid() {
         {/* Latest news */}
         <Card className="p-5 lg:col-span-1">
           <SectionTitle title="Latest News" href="/news" />
-          <ul className="mt-4 divide-y divide-border">
-            {news.slice(0, 3).map((n) => (
-              <li key={n.id}>
-                <Link href={`/news/${n.id}`} className="group flex items-center gap-3 py-3">
-                  <Image
-                    src={n.image || "/placeholder.svg"}
-                    alt=""
-                    width={56}
-                    height={56}
-                    className="h-14 w-14 shrink-0 rounded-md object-cover"
-                  />
-                  <div>
-                    <p className="text-sm font-semibold leading-snug group-hover:text-accent">{n.title}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{n.date}</p>
+          {newsLoading ? (
+            <div className="mt-4 animate-pulse space-y-4">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-3 py-1">
+                  <div className="h-14 w-14 shrink-0 rounded-md bg-muted" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-4/5 rounded bg-muted" />
+                    <div className="h-3 w-1/3 rounded bg-muted" />
                   </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ul className="mt-4 divide-y divide-border">
+              {news!.slice(0, 3).map((n) => (
+                <li key={n.id}>
+                  <Link href={`/news/${n.id}`} className="group flex items-center gap-3 py-3">
+                    <Image
+                      src={n.image || "/placeholder.svg"}
+                      alt=""
+                      width={56}
+                      height={56}
+                      className="h-14 w-14 shrink-0 rounded-md object-cover"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold leading-snug group-hover:text-accent">{n.title}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{n.date}</p>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+              {news!.length === 0 && (
+                <li className="py-4 text-center text-xs text-muted-foreground">No news yet.</li>
+              )}
+            </ul>
+          )}
         </Card>
 
         {/* League standings */}
         <Card className="p-5 lg:col-span-1">
           <SectionTitle title="League Standings" href="/matches" />
-          <table className="mt-4 w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="pb-2 font-medium">#</th>
-                <th className="pb-2 font-medium">Team</th>
-                <th className="pb-2 text-center font-medium">W</th>
-                <th className="pb-2 text-center font-medium">L</th>
-                <th className="pb-2 text-center font-medium">Pts</th>
-              </tr>
-            </thead>
-            <tbody>
-              {standings.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-4 text-center text-xs text-muted-foreground">
-                    No standings yet.
-                  </td>
+          {standingsLoading ? (
+            <div className="mt-4 animate-pulse space-y-3">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="h-3 w-4 rounded bg-muted" />
+                  <div className="h-3 flex-1 rounded bg-muted" />
+                  <div className="h-3 w-5 rounded bg-muted" />
+                  <div className="h-3 w-5 rounded bg-muted" />
+                  <div className="h-3 w-6 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <table className="mt-4 w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th className="pb-2 font-medium">#</th>
+                  <th className="pb-2 font-medium">Team</th>
+                  <th className="pb-2 text-center font-medium">W</th>
+                  <th className="pb-2 text-center font-medium">L</th>
+                  <th className="pb-2 text-center font-medium">Pts</th>
                 </tr>
-              ) : (
-                standings.map((s) => {
-                  const isRangers = s.team === "Mutare Rangers"
-                  return (
-                    <tr
-                      key={s.id}
-                      className={isRangers ? "text-primary" : "text-foreground"}
-                    >
-                      <td className="py-2 font-heading font-bold">{s.pos}</td>
-                      <td className="py-2 font-medium">{s.team}</td>
-                      <td className="py-2 text-center text-muted-foreground">{s.w}</td>
-                      <td className="py-2 text-center text-muted-foreground">{s.l}</td>
-                      <td className="py-2 text-center font-heading font-bold">{s.pts}</td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {standings!.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-4 text-center text-xs text-muted-foreground">
+                      No standings yet.
+                    </td>
+                  </tr>
+                ) : (
+                  standings!.map((s) => {
+                    const isRangers = s.team === "Mutare Rangers"
+                    return (
+                      <tr
+                        key={s.id}
+                        className={isRangers ? "text-primary" : "text-foreground"}
+                      >
+                        <td className="py-2 font-heading font-bold">{s.pos}</td>
+                        <td className="py-2 font-medium">{s.team}</td>
+                        <td className="py-2 text-center text-muted-foreground">{s.w}</td>
+                        <td className="py-2 text-center text-muted-foreground">{s.l}</td>
+                        <td className="py-2 text-center font-heading font-bold">{s.pts}</td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          )}
         </Card>
 
         {/* Shop teaser */}
