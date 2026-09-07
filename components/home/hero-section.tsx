@@ -67,9 +67,11 @@ function AnimatedStat({ raw, active }: { raw: string | number; active: boolean }
 
 export function HeroSection() {
   // Real next match, fetched from the same API the Match Center page uses.
-  // Falls back to the static matches[0] entry until this resolves, and
-  // stays on the fallback if the request fails or nothing is upcoming.
-  const [nextMatch, setNextMatch] = useState<Match>(matches[0])
+  // Starts as "loading" rather than showing the old static fallback, so the
+  // card doesn't flash from one match to a different one after the fetch
+  // resolves.
+  const [nextMatch, setNextMatch] = useState<Match | null>(null)
+  const [nextMatchLoading, setNextMatchLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -78,9 +80,15 @@ export function HeroSection() {
       .then((data: Match[]) => {
         if (cancelled || !Array.isArray(data)) return
         const upcoming = data.find((m) => m.status === "upcoming")
-        if (upcoming) setNextMatch(upcoming)
+        setNextMatch(upcoming ?? matches[0])
       })
-      .catch((err) => console.error("Failed to load next match", err))
+      .catch((err) => {
+        console.error("Failed to load next match", err)
+        if (!cancelled) setNextMatch(matches[0])
+      })
+      .finally(() => {
+        if (!cancelled) setNextMatchLoading(false)
+      })
     return () => {
       cancelled = true
     }
@@ -221,17 +229,39 @@ export function HeroSection() {
         {/* Next match card */}
         <div className="mt-12 w-full max-w-sm rounded-xl border border-border bg-card/90 p-5 backdrop-blur lg:absolute lg:right-6 lg:top-1/2 lg:mt-0 lg:-translate-y-1/2">
           <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-accent">Next Match</p>
-          <div className="mt-4 flex items-center justify-between">
-            <TeamBadge name={nextMatch.home} />
-            <span className="font-heading text-2xl font-bold text-muted-foreground">VS</span>
-            <TeamBadge name={nextMatch.away} />
-          </div>
-          <div className="mt-4 border-t border-border pt-4 text-center">
-            <p className="font-heading text-lg font-bold">
-              {nextMatch.date} · {nextMatch.time}
-            </p>
-            <p className="text-sm text-muted-foreground">{nextMatch.venue}</p>
-          </div>
+          {nextMatchLoading || !nextMatch ? (
+            <div className="mt-4 animate-pulse space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-1 flex-col items-center gap-2">
+                  <div className="h-12 w-12 rounded-full bg-muted" />
+                  <div className="h-3 w-16 rounded bg-muted" />
+                </div>
+                <div className="h-6 w-8 rounded bg-muted" />
+                <div className="flex flex-1 flex-col items-center gap-2">
+                  <div className="h-12 w-12 rounded-full bg-muted" />
+                  <div className="h-3 w-16 rounded bg-muted" />
+                </div>
+              </div>
+              <div className="border-t border-border pt-4 text-center">
+                <div className="mx-auto h-5 w-32 rounded bg-muted" />
+                <div className="mx-auto mt-2 h-3 w-24 rounded bg-muted" />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mt-4 flex items-center justify-between">
+                <TeamBadge name={nextMatch.home} />
+                <span className="font-heading text-2xl font-bold text-muted-foreground">VS</span>
+                <TeamBadge name={nextMatch.away} />
+              </div>
+              <div className="mt-4 border-t border-border pt-4 text-center">
+                <p className="font-heading text-lg font-bold">
+                  {nextMatch.date} · {nextMatch.time}
+                </p>
+                <p className="text-sm text-muted-foreground">{nextMatch.venue}</p>
+              </div>
+            </>
+          )}
           <Button
             asChild
             className="mt-4 w-full bg-accent font-semibold uppercase tracking-wide text-accent-foreground hover:bg-accent/90"
