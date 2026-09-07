@@ -5,14 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Trophy, Users, ClipboardList, Heart, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { teamStats, matches } from "@/lib/data"
-
-const stats = [
-  { icon: Trophy, raw: teamStats.trophies, label: "Trophies Won" },
-  { icon: Users, raw: teamStats.players, label: "Players" },
-  { icon: ClipboardList, raw: teamStats.coaches, label: "Coaches & Staff" },
-  { icon: Heart, raw: teamStats.fans, label: "Fans" },
-]
+import { teamStats, matches, type Player } from "@/lib/data"
 
 /** Splits "15K+" into { number: 15, suffix: "K+" }, or "12" into { number: 12, suffix: "" } */
 function splitStat(raw: string | number) {
@@ -25,6 +18,12 @@ function splitStat(raw: string | number) {
 function useCountUp(target: number, active: boolean, duration = 1600) {
   const [value, setValue] = useState(0)
   const started = useRef(false)
+
+  // Reset so the count-up can replay if the target changes after data loads
+  // (e.g. the real player count arriving after the initial static render).
+  useEffect(() => {
+    started.current = false
+  }, [target])
 
   useEffect(() => {
     if (!active || started.current) return
@@ -62,6 +61,38 @@ export function HeroSection() {
   const nextMatch = matches[0]
   const [statsActive, setStatsActive] = useState(false)
   const statsRef = useRef<HTMLDivElement>(null)
+
+  // Real player count, fetched from the same API the admin panel uses.
+  // Falls back to the static teamStats.players number until this resolves,
+  // and stays on the fallback if the request fails.
+  const [playerCount, setPlayerCount] = useState(teamStats.players)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/players")
+      .then((res) => res.json())
+      .then((data: Player[]) => {
+        if (!cancelled && Array.isArray(data)) setPlayerCount(data.length)
+      })
+      .catch((err) => console.error("Failed to load player count", err))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // TODO: Trophies currently pulls the static teamStats.trophies number.
+  // Once the About page's Trophy Cabinet component is shared, this should
+  // count real entries the same way playerCount does above.
+  //
+  // TODO: Coaches & Staff currently pulls the static teamStats.coaches
+  // number. Once the Team page (or its API route) is shared, this should
+  // fetch and count real coaches the same way.
+  const stats = [
+    { icon: Trophy, raw: teamStats.trophies, label: "Trophies Won" },
+    { icon: Users, raw: playerCount, label: "Players" },
+    { icon: ClipboardList, raw: teamStats.coaches, label: "Coaches & Staff" },
+    { icon: Heart, raw: teamStats.fans, label: "Fans" },
+  ]
 
   useEffect(() => {
     const node = statsRef.current
