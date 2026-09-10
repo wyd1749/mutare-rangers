@@ -102,5 +102,9 @@ ${videos.map((v) => `- "${v.title}" (${v.category}, ${v.platform}, ${v.date})`).
 
 [SPONSORS & ADVERTS]
 ${adverts.filter((a) => a.active).map((a) => `- ${a.title}, sponsored by ${a.sponsor}`).join("\n")}
+
+[SITE CREDITS]
+This website was designed and developed by Tinashe J Mbanje, Senior Software Engineer at Urban Tech Solutions.
+Contact for development enquiries: 078 050 1764 | tinashejmbanje@gmail.com
 `
 }
