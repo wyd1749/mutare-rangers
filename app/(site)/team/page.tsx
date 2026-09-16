@@ -8,7 +8,7 @@ import { ChevronRight } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { coaches, teams, type Player } from "@/lib/data"
+import { teams, type Player, type Coach } from "@/lib/data"
 
 const tabs = ["Players", "Coaches", "Staff"] as const
 const positions = ["All Positions", "Guard", "Forward", "Center"]
@@ -36,7 +36,11 @@ const itemVariants = {
 
 export default function TeamPage() {
   const [players, setPlayers] = useState<Player[]>([])
-  const [loading, setLoading] = useState(true)
+  const [playersLoading, setPlayersLoading] = useState(true)
+
+  const [coaches, setCoaches] = useState<Coach[]>([])
+  const [coachesLoading, setCoachesLoading] = useState(true)
+
   const [teamId, setTeamId] = useState<string>(teams[0].id)
   const [tab, setTab] = useState<(typeof tabs)[number]>("Players")
   const [pos, setPos] = useState("All Positions")
@@ -46,13 +50,21 @@ export default function TeamPage() {
       .then((res) => res.json())
       .then((data: Player[]) => setPlayers(data))
       .catch((err) => console.error("Failed to load players:", err))
-      .finally(() => setLoading(false))
+      .finally(() => setPlayersLoading(false))
+  }, [])
+
+  useEffect(() => {
+    fetch("/api/coaches")
+      .then((res) => res.json())
+      .then((data: Coach[]) => setCoaches(data))
+      .catch((err) => console.error("Failed to load coaches:", err))
+      .finally(() => setCoachesLoading(false))
   }, [])
 
   const activeTeam = teams.find((t) => t.id === teamId) ?? teams[0]
 
   const teamPlayers = useMemo(() => players.filter((p) => p.team === teamId), [teamId, players])
-  const teamCoaches = useMemo(() => coaches.filter((c) => c.team === teamId), [teamId])
+  const teamCoaches = useMemo(() => coaches.filter((c) => c.team === teamId), [teamId, coaches])
 
   const filtered = useMemo(
     () => (pos === "All Positions" ? teamPlayers : teamPlayers.filter((p) => p.group === pos)),
@@ -185,7 +197,7 @@ export default function TeamPage() {
 
         {tab === "Players" && (
           <>
-            {loading ? (
+            {playersLoading ? (
               <Card className="mt-6 border-border/40 bg-card/60 backdrop-blur-md p-8 text-center text-sm text-muted-foreground">
                 Loading players...
               </Card>
@@ -250,7 +262,11 @@ export default function TeamPage() {
 
         {tab !== "Players" && (
           <>
-            {teamCoaches.length === 0 ? (
+            {coachesLoading ? (
+              <Card className="mt-6 border-border/40 bg-card/60 backdrop-blur-md p-8 text-center text-sm text-muted-foreground">
+                Loading {tab.toLowerCase()}...
+              </Card>
+            ) : teamCoaches.length === 0 ? (
               <Card className="mt-6 border-border/40 bg-card/60 backdrop-blur-md p-8 text-center text-sm text-muted-foreground">
                 No {tab.toLowerCase()} listed for this team yet.
               </Card>

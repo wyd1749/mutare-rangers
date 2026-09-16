@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import { Plus, Pencil, Trash2 } from "lucide-react"
+import { Plus, Pencil, Trash2, UploadCloud } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { Coach } from "@/lib/data"
@@ -34,6 +34,88 @@ function Input({
       placeholder={placeholder}
       className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
     />
+  )
+}
+
+function PhotoDropzone({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (url: string) => void
+}) {
+  const [dragging, setDragging] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  async function upload(file: File) {
+    setError("")
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("folder", "coaches")
+      const res = await fetch("/api/upload", { method: "POST", body: formData })
+      if (!res.ok) throw new Error("Upload failed")
+      const data: { url: string } = await res.json()
+      onChange(data.url)
+    } catch (err) {
+      console.error(err)
+      setError("Upload failed. Please try again.")
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  function handleFiles(files: FileList | null) {
+    const file = files?.[0]
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      setError("Please drop an image file.")
+      return
+    }
+    upload(file)
+  }
+
+  return (
+    <div>
+      <div
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setDragging(true)
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault()
+          setDragging(false)
+          handleFiles(e.dataTransfer.files)
+        }}
+        className={`mt-1.5 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed px-4 py-6 text-center transition-colors ${
+          dragging ? "border-accent bg-accent/10" : "border-border hover:border-accent/60"
+        }`}
+      >
+        {value ? (
+          <div className="relative h-20 w-20 overflow-hidden rounded-full">
+            <Image src={value} alt="Preview" fill className="object-cover" />
+          </div>
+        ) : (
+          <UploadCloud className="h-6 w-6 text-muted-foreground" />
+        )}
+        <p className="text-xs text-muted-foreground">
+          {uploading ? "Uploading..." : "Drag & drop a photo here, or click to browse"}
+        </p>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+      </div>
+      {error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}
+    </div>
   )
 }
 
@@ -219,8 +301,8 @@ export default function CoachesAdmin() {
                 </select>
               </div>
               <div>
-                <Label>Photo URL</Label>
-                <Input value={editing.photo} onChange={(v) => setEditing({ ...editing, photo: v })} placeholder="/images/player-1.png" />
+                <Label>Photo</Label>
+                <PhotoDropzone value={editing.photo} onChange={(url) => setEditing({ ...editing, photo: url })} />
               </div>
             </div>
 
