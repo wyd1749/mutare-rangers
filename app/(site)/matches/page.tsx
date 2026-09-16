@@ -13,6 +13,7 @@ type FilterValue = (typeof filters)[number]
 
 export default function MatchesPage() {
   const [filter, setFilter] = useState<FilterValue>("All")
+  const [previewingLive, setPreviewingLive] = useState(false)
   const [matches, setMatches] = useState<Match[]>([])
   const [matchesLoading, setMatchesLoading] = useState(true)
 
@@ -107,16 +108,34 @@ export default function MatchesPage() {
             >
               <Card className="relative overflow-hidden border-border/40 bg-card/60 p-6 backdrop-blur-md shadow-xl transition-all duration-300 hover:border-primary/40">
                 {/* Coming Soon overlay — live scoring isn't wired up yet.
-                    The card underneath stays visible as a preview of what
-                    the feature will look like once it's live. */}
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-background/80 backdrop-blur-sm">
-                  <span className="rounded-full bg-accent px-4 py-1.5 font-heading text-xs font-bold uppercase tracking-widest text-accent-foreground shadow-lg">
-                    Coming Soon
-                  </span>
-                  <p className="max-w-xs text-center text-sm text-muted-foreground">
-                    Live scoring is on the way. This is a preview of how it'll look on game day.
-                  </p>
-                </div>
+                    Clicking Preview hides this so visitors can see the full
+                    mock scoreboard underneath. */}
+                {!previewingLive && (
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                    <span className="rounded-full bg-accent px-4 py-1.5 font-heading text-xs font-bold uppercase tracking-widest text-accent-foreground shadow-lg">
+                      Coming Soon
+                    </span>
+                    <p className="max-w-xs text-center text-sm text-muted-foreground">
+                      Live scoring is on the way. Tap below to preview how it'll look on game day.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={() => setPreviewingLive(true)}
+                      className="bg-accent font-semibold uppercase text-accent-foreground hover:bg-accent/90"
+                    >
+                      Preview
+                    </Button>
+                  </div>
+                )}
+
+                {previewingLive && (
+                  <button
+                    onClick={() => setPreviewingLive(false)}
+                    className="absolute right-4 top-4 z-20 rounded-full bg-background/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur-sm hover:text-foreground"
+                  >
+                    Exit Preview
+                  </button>
+                )}
 
                 <div className="flex items-center justify-between">
                   <h2 className="font-heading text-lg font-bold uppercase tracking-wide">Live Game</h2>
