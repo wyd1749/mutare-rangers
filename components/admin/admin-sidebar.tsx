@@ -14,6 +14,7 @@ import {
   Inbox,
   Clapperboard,
   Landmark,
+  UserCog,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useContactMessages } from "@/lib/messages-store"
@@ -21,6 +22,7 @@ import { useContactMessages } from "@/lib/messages-store"
 const links = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Players", href: "/admin/players", icon: Users },
+  { label: "Coaches", href: "/admin/coaches", icon: UserCog },
   { label: "Matches & Standings", href: "/admin/matches", icon: CalendarDays },
   { label: "News", href: "/admin/news", icon: Newspaper },
   { label: "Academy", href: "/admin/academy", icon: GraduationCap },
