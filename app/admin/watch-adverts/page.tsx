@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import type { Video, Advert } from "@/lib/data"
 import { platformLabels } from "@/lib/video-embed"
 import type { TvVideo } from "@/app/api/tv-videos/route"
+import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 
 export default function WatchAdvertsAdmin() {
   const [tab, setTab] = useState<"videos" | "tv" | "adverts">("videos")
@@ -304,13 +305,25 @@ function TvPanel() {
     }
     setUploading(true)
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("folder", "tv-screen")
-      formData.append("bucket", "videos")
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData })
-      if (!uploadRes.ok) throw new Error("Upload failed")
-      const { url }: { url: string } = await uploadRes.json()
+      // Uploaded directly from the browser to Supabase Storage — not
+      // through our own /api/upload route — because video files easily
+      // exceed Vercel's 4.5MB serverless function body limit, which no
+      // amount of server-side code can get around. Going direct has no
+      // such limit; it's governed only by the bucket's own file size cap.
+      const supabase = getSupabaseBrowserClient()
+      if (!supabase) throw new Error("Storage client not configured")
+
+      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-")
+      const path = `tv-screen/${Date.now()}-${safeName}`
+
+      const { error: uploadError } = await supabase.storage.from("videos").upload(path, file, {
+        contentType: file.type,
+        upsert: false,
+      })
+      if (uploadError) throw uploadError
+
+      const { data: publicUrlData } = supabase.storage.from("videos").getPublicUrl(path)
+      const url = publicUrlData.publicUrl
 
       const newItem: TvVideo = { id: `tv-${Date.now()}`, video_url: url, position: rows.length }
       const createRes = await fetch("/api/tv-videos", {
