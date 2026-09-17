@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Play, Tv } from "lucide-react"
+import { Play, Tv, Volume2, VolumeX } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { videos as initialVideos, adverts as initialAdverts, type Video, type Advert } from "@/lib/data"
@@ -189,6 +189,7 @@ function TvScreen() {
   const [playlist, setPlaylist] = useState<TvVideo[]>([])
   const [loading, setLoading] = useState(true)
   const [index, setIndex] = useState(0)
+  const [muted, setMuted] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -270,13 +271,23 @@ function TvScreen() {
               <video
                 ref={videoRef}
                 autoPlay
-                muted
+                muted={muted}
                 playsInline
                 onEnded={handleEnded}
                 className="h-full w-full object-cover"
               >
                 <source src={playlist[index]?.video_url} />
               </video>
+
+              {/* Mute / unmute toggle — starts muted so autoplay is allowed by the browser */}
+              <button
+                type="button"
+                onClick={() => setMuted((m) => !m)}
+                aria-label={muted ? "Unmute" : "Mute"}
+                className="absolute bottom-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-colors hover:bg-black/80"
+              >
+                {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </button>
             </>
           )}
         </div>
