@@ -210,7 +210,17 @@ function TvScreen() {
   // Advance to the next video when the current one finishes, wrapping
   // back to the start — this is what makes the screen "keep repeating."
   function handleEnded() {
-    setIndex((prev) => (prev + 1) % playlist.length)
+    setIndex((prev) => {
+      const next = (prev + 1) % playlist.length
+      // If there's only one video, the index doesn't change, so React
+      // won't re-run the "load + play" effect below. Replay it manually.
+      if (next === prev) {
+        videoRef.current?.play().catch(() => {
+          /* autoplay can be blocked until the user interacts with the page */
+        })
+      }
+      return next
+    })
   }
 
   // Reload and play whenever the active index changes.
