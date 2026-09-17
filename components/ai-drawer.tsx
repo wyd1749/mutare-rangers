@@ -4,6 +4,8 @@
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Send, Loader2, Sparkles, Trash2 } from "lucide-react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
@@ -20,6 +22,44 @@ const INITIAL_WELCOME: Message = {
 interface AIDrawerProps {
   isOpen: boolean
   onClose: () => void
+}
+
+// Renders assistant replies as formatted markdown (bold, bullet/numbered lists,
+// paragraph spacing, links) instead of dumping raw "**text**" and "*" characters.
+function MarkdownMessage({ content }: { content: string }) {
+  return (
+    <div className="space-y-2 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+          strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          ul: ({ children }) => <ul className="ml-4 list-disc space-y-1 marker:text-accent">{children}</ul>,
+          ol: ({ children }) => <ol className="ml-4 list-decimal space-y-1 marker:text-accent">{children}</ol>,
+          li: ({ children }) => <li className="leading-relaxed pl-0.5">{children}</li>,
+          a: ({ children, href }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent underline underline-offset-2 hover:text-accent/80"
+            >
+              {children}
+            </a>
+          ),
+          h1: ({ children }) => <p className="font-heading font-bold uppercase tracking-wide">{children}</p>,
+          h2: ({ children }) => <p className="font-heading font-bold uppercase tracking-wide">{children}</p>,
+          h3: ({ children }) => <p className="font-semibold">{children}</p>,
+          code: ({ children }) => (
+            <code className="rounded bg-background/60 px-1 py-0.5 font-mono text-[11px]">{children}</code>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
 }
 
 export function AIDrawer({ isOpen, onClose }: AIDrawerProps) {
@@ -132,7 +172,7 @@ export function AIDrawer({ isOpen, onClose }: AIDrawerProps) {
                         : "bg-muted/80 text-foreground border border-border/60 rounded-bl-none"
                     }`}
                   >
-                    {m.content}
+                    {m.role === "assistant" ? <MarkdownMessage content={m.content} /> : m.content}
                   </div>
                 </div>
               ))}
