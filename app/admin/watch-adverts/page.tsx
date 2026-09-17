@@ -307,6 +307,7 @@ function TvPanel() {
       const formData = new FormData()
       formData.append("file", file)
       formData.append("folder", "tv-screen")
+      formData.append("bucket", "videos")
       const uploadRes = await fetch("/api/upload", { method: "POST", body: formData })
       if (!uploadRes.ok) throw new Error("Upload failed")
       const { url }: { url: string } = await uploadRes.json()

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 
-const BUCKET = "documents"
+const ALLOWED_BUCKETS = new Set(["documents", "videos"])
+const DEFAULT_BUCKET = "documents"
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +14,8 @@ export async function POST(req: Request) {
     const formData = await req.formData()
     const file = formData.get("file") as File | null
     const folder = (formData.get("folder") as string | null) ?? "uploads"
+    const requestedBucket = (formData.get("bucket") as string | null) ?? DEFAULT_BUCKET
+    const bucket = ALLOWED_BUCKETS.has(requestedBucket) ? requestedBucket : DEFAULT_BUCKET
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
@@ -24,7 +27,7 @@ export async function POST(req: Request) {
     const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-")
     const path = `${folder}/${Date.now()}-${safeName}`
 
-    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, bytes, {
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(path, bytes, {
       contentType: file.type || "application/octet-stream",
       upsert: false,
     })
@@ -34,7 +37,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to upload file" }, { status: 500 })
     }
 
-    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(path)
+    const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(path)
 
     return NextResponse.json({ url: publicUrlData.publicUrl })
   } catch (error) {
