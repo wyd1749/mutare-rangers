@@ -1,14 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Play } from "lucide-react"
+import { Play, Tv } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { videos as initialVideos, adverts as initialAdverts, type Video, type Advert } from "@/lib/data"
 import { getEmbedUrl, platformLabels, platformColors } from "@/lib/video-embed"
+import type { TvVideo } from "@/app/api/tv-videos/route"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -72,6 +73,16 @@ export default function WatchPage() {
             Catch up on match highlights, interviews and livestreams from Mutare Rangers — on YouTube, TikTok,
             Facebook and Instagram.
           </p>
+        </motion.div>
+
+        {/* TV Screen — looping showreel playlist, uploaded from the admin panel */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.05, ease: "easeOut" }}
+          className="mt-8"
+        >
+          <TvScreen />
         </motion.div>
 
         {/* Video Player Modal */}
@@ -169,6 +180,103 @@ export default function WatchPage() {
             </div>
           </motion.div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function TvScreen() {
+  const [playlist, setPlaylist] = useState<TvVideo[]>([])
+  const [loading, setLoading] = useState(true)
+  const [index, setIndex] = useState(0)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/tv-videos")
+      .then((res) => res.json())
+      .then((data: TvVideo[]) => {
+        if (!cancelled) setPlaylist(data)
+      })
+      .catch((err) => console.error("Failed to load TV playlist", err))
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Advance to the next video when the current one finishes, wrapping
+  // back to the start — this is what makes the screen "keep repeating."
+  function handleEnded() {
+    setIndex((prev) => (prev + 1) % playlist.length)
+  }
+
+  // Reload and play whenever the active index changes.
+  useEffect(() => {
+    videoRef.current?.load()
+    videoRef.current?.play().catch(() => {
+      /* autoplay can be blocked until the user interacts with the page */
+    })
+  }, [index])
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      {/* TV bezel */}
+      <div className="relative rounded-[2rem] border-[10px] border-neutral-900 bg-neutral-950 p-3 shadow-2xl shadow-black/60">
+        {/* Screen glow */}
+        <div className="pointer-events-none absolute -inset-4 -z-10 rounded-[2.5rem] bg-primary/10 blur-2xl" />
+
+        {/* Top bezel details */}
+        <div className="mb-2 flex items-center justify-between px-2">
+          <div className="flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500/70" />
+            <span className="h-1.5 w-1.5 rounded-full bg-yellow-500/70" />
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500/70" />
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+            <Tv className="h-3 w-3" /> Rangers TV
+          </div>
+        </div>
+
+        <div className="relative aspect-video overflow-hidden rounded-xl bg-black">
+          {loading ? (
+            <div className="flex h-full items-center justify-center text-sm text-neutral-500">Loading…</div>
+          ) : playlist.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-neutral-500">
+              <Tv className="h-8 w-8" />
+              <p className="text-sm">No videos on the TV screen yet — check back soon.</p>
+            </div>
+          ) : (
+            <>
+              {/* Subtle scanline overlay for a screen-like feel */}
+              <div
+                className="pointer-events-none absolute inset-0 z-10 opacity-[0.06]"
+                style={{
+                  backgroundImage: "repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px)",
+                }}
+              />
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                onEnded={handleEnded}
+                className="h-full w-full object-cover"
+              >
+                <source src={playlist[index]?.video_url} />
+              </video>
+            </>
+          )}
+        </div>
+
+        {/* Bottom bezel speaker grille */}
+        <div className="mt-2 flex justify-center gap-1">
+          {Array.from({ length: 24 }).map((_, i) => (
+            <span key={i} className="h-1 w-1 rounded-full bg-neutral-800" />
+          ))}
+        </div>
       </div>
     </div>
   )

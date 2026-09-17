@@ -1,23 +1,24 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Plus, Pencil, Trash2, X, Loader2 } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Plus, Pencil, Trash2, X, Loader2, UploadCloud, ArrowUp, ArrowDown, Tv } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Video, Advert } from "@/lib/data"
 import { platformLabels } from "@/lib/video-embed"
+import type { TvVideo } from "@/app/api/tv-videos/route"
 
 export default function WatchAdvertsAdmin() {
-  const [tab, setTab] = useState<"videos" | "adverts">("videos")
+  const [tab, setTab] = useState<"videos" | "tv" | "adverts">("videos")
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-heading text-3xl font-bold uppercase tracking-tight">Watch & Adverts</h1>
-          <p className="text-sm text-muted-foreground">Manage videos and sponsor adverts</p>
+          <p className="text-sm text-muted-foreground">Manage videos, the TV screen playlist, and sponsor adverts</p>
         </div>
         <div className="flex rounded-md border border-border p-1">
           <button
@@ -28,6 +29,15 @@ export default function WatchAdvertsAdmin() {
             )}
           >
             Videos
+          </button>
+          <button
+            onClick={() => setTab("tv")}
+            className={cn(
+              "rounded px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors",
+              tab === "tv" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            TV Screen
           </button>
           <button
             onClick={() => setTab("adverts")}
@@ -41,7 +51,7 @@ export default function WatchAdvertsAdmin() {
         </div>
       </div>
 
-      {tab === "videos" ? <VideosPanel /> : <AdvertsPanel />}
+      {tab === "videos" ? <VideosPanel /> : tab === "tv" ? <TvPanel /> : <AdvertsPanel />}
     </div>
   )
 }
@@ -213,44 +223,38 @@ function VideosPanel() {
                 <Label>Title</Label>
                 <Input value={editing.title} onChange={(v) => setEditing({ ...editing, title: v })} placeholder="Video title" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Platform</Label>
-                  <select
-                    value={editing.platform}
-                    onChange={(e) => setEditing({ ...editing, platform: e.target.value as Video["platform"] })}
-                    className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="youtube">YouTube</option>
-                    <option value="tiktok">TikTok</option>
-                    <option value="facebook">Facebook</option>
-                    <option value="instagram">Instagram</option>
-                  </select>
-                </div>
-                <div>
-                  <Label>Category</Label>
-                  <select
-                    value={editing.category}
-                    onChange={(e) => setEditing({ ...editing, category: e.target.value as Video["category"] })}
-                    className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="Highlights">Highlights</option>
-                    <option value="Live">Live</option>
-                    <option value="Interview">Interview</option>
-                  </select>
-                </div>
+              <div>
+                <Label>Platform</Label>
+                <select
+                  value={editing.platform}
+                  onChange={(e) => setEditing({ ...editing, platform: e.target.value as Video["platform"] })}
+                  className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="youtube">YouTube</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="facebook">Facebook</option>
+                  <option value="instagram">Instagram</option>
+                </select>
               </div>
               <div>
                 <Label>Video URL</Label>
-                <Input
-                  value={editing.url}
-                  onChange={(v) => setEditing({ ...editing, url: v })}
-                  placeholder="Paste the full video link from YouTube, TikTok, Facebook or Instagram"
-                />
+                <Input value={editing.url} onChange={(v) => setEditing({ ...editing, url: v })} placeholder="https://..." />
+              </div>
+              <div>
+                <Label>Category</Label>
+                <select
+                  value={editing.category}
+                  onChange={(e) => setEditing({ ...editing, category: e.target.value as Video["category"] })}
+                  className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="Highlights">Highlights</option>
+                  <option value="Live">Live</option>
+                  <option value="Interview">Interview</option>
+                </select>
               </div>
               <div>
                 <Label>Date</Label>
-                <Input value={editing.date} onChange={(v) => setEditing({ ...editing, date: v })} placeholder="Jun 22, 2025" />
+                <Input value={editing.date} onChange={(v) => setEditing({ ...editing, date: v })} placeholder="May 18, 2025" />
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-2">
@@ -264,6 +268,189 @@ function VideosPanel() {
           </Card>
         </div>
       )}
+    </>
+  )
+}
+
+function TvPanel() {
+  const [rows, setRows] = useState<TvVideo[]>([])
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  const [error, setError] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/tv-videos")
+      .then((res) => res.json())
+      .then((data: TvVideo[]) => {
+        if (!cancelled) setRows(data)
+      })
+      .catch((err) => console.error("Failed to load TV videos", err))
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function uploadFile(file: File) {
+    setError("")
+    if (!file.type.startsWith("video/")) {
+      setError("Please drop a video file.")
+      return
+    }
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("folder", "tv-screen")
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData })
+      if (!uploadRes.ok) throw new Error("Upload failed")
+      const { url }: { url: string } = await uploadRes.json()
+
+      const newItem: TvVideo = { id: `tv-${Date.now()}`, video_url: url, position: rows.length }
+      const createRes = await fetch("/api/tv-videos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newItem),
+      })
+      if (!createRes.ok) throw new Error("Failed to save video")
+      const saved: TvVideo = await createRes.json()
+      setRows((prev) => [...prev, saved])
+    } catch (err) {
+      console.error(err)
+      setError("Upload failed. Please try again.")
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  function handleFiles(files: FileList | null) {
+    const file = files?.[0]
+    if (file) uploadFile(file)
+  }
+
+  async function remove(id: string) {
+    const prev = rows
+    setRows((r) => r.filter((x) => x.id !== id))
+    try {
+      const res = await fetch("/api/tv-videos", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      })
+      if (!res.ok) throw new Error("Delete failed")
+    } catch (err) {
+      console.error(err)
+      setRows(prev)
+    }
+  }
+
+  async function move(index: number, direction: -1 | 1) {
+    const target = index + direction
+    if (target < 0 || target >= rows.length) return
+    const reordered = [...rows]
+    ;[reordered[index], reordered[target]] = [reordered[target], reordered[index]]
+    const withPositions = reordered.map((r, i) => ({ ...r, position: i }))
+    setRows(withPositions)
+    try {
+      await fetch("/api/tv-videos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(withPositions.map((r) => ({ id: r.id, position: r.position }))),
+      })
+    } catch (err) {
+      console.error("Failed to save new order", err)
+    }
+  }
+
+  return (
+    <>
+      <Card className="p-5">
+        <div className="flex items-center gap-2">
+          <Tv className="h-4 w-4 text-accent" />
+          <h2 className="font-heading text-sm font-bold uppercase tracking-wide">TV Screen Playlist</h2>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Videos here play on a loop on the public Watch page's TV screen, in the order listed below.
+        </p>
+
+        <div
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragging(true)
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault()
+            setDragging(false)
+            handleFiles(e.dataTransfer.files)
+          }}
+          className={cn(
+            "mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed px-4 py-8 text-center transition-colors",
+            dragging ? "border-accent bg-accent/10" : "border-border hover:border-accent/60",
+          )}
+        >
+          <UploadCloud className="h-6 w-6 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            {uploading ? "Uploading..." : "Drag & drop a video here, or click to browse"}
+          </p>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={(e) => handleFiles(e.target.files)}
+          />
+        </div>
+        {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+
+        <div className="mt-5">
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading playlist…
+            </div>
+          ) : rows.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">No videos uploaded yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {rows.map((v, i) => (
+                <li key={v.id} className="flex items-center gap-3 rounded-md border border-border p-2">
+                  <video src={v.video_url} muted className="h-14 w-24 rounded object-cover" />
+                  <span className="flex-1 truncate text-xs text-muted-foreground">{v.video_url.split("/").pop()}</span>
+                  <button
+                    onClick={() => move(i, -1)}
+                    disabled={i === 0}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary disabled:opacity-30"
+                    aria-label="Move up"
+                  >
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => move(i, 1)}
+                    disabled={i === rows.length - 1}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary disabled:opacity-30"
+                    aria-label="Move down"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => remove(v.id)}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+                    aria-label="Remove video"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Card>
     </>
   )
 }
