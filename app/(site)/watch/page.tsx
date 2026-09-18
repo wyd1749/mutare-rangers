@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Play, Tv, Volume2, VolumeX } from "lucide-react"
+import { Play, Tv, Volume2, VolumeX, Maximize, Minimize } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { videos as initialVideos, adverts as initialAdverts, type Video, type Advert } from "@/lib/data"
@@ -190,7 +190,9 @@ function TvScreen() {
   const [loading, setLoading] = useState(true)
   const [index, setIndex] = useState(0)
   const [muted, setMuted] = useState(true)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const screenRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -232,6 +234,27 @@ function TvScreen() {
     })
   }, [index])
 
+  // Keep isFullscreen in sync if the user exits via Esc or the browser's own controls.
+  useEffect(() => {
+    function onFullscreenChange() {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener("fullscreenchange", onFullscreenChange)
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange)
+  }, [])
+
+  function toggleFullscreen() {
+    const el = screenRef.current
+    if (!el) return
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.().catch(() => {
+        /* fullscreen can be blocked by the browser in some contexts */
+      })
+    } else {
+      document.exitFullscreen?.()
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl">
       {/* TV bezel */}
@@ -251,7 +274,13 @@ function TvScreen() {
           </div>
         </div>
 
-        <div className="relative aspect-video overflow-hidden rounded-xl bg-black">
+        <div
+          ref={screenRef}
+          className={`relative overflow-hidden bg-black ${
+            isFullscreen
+              ? "flex h-screen w-screen items-center justify-center rounded-none"
+              : "aspect-video rounded-xl"
+          }`}>
           {loading ? (
             <div className="flex h-full items-center justify-center text-sm text-neutral-500">Loading…</div>
           ) : playlist.length === 0 ? (
@@ -274,7 +303,7 @@ function TvScreen() {
                 muted={muted}
                 playsInline
                 onEnded={handleEnded}
-                className="h-full w-full object-cover"
+                className={`h-full w-full ${isFullscreen ? "object-contain" : "object-cover"}`}
               >
                 <source src={playlist[index]?.video_url} />
               </video>
@@ -284,9 +313,19 @@ function TvScreen() {
                 type="button"
                 onClick={() => setMuted((m) => !m)}
                 aria-label={muted ? "Unmute" : "Mute"}
-                className="absolute bottom-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-colors hover:bg-black/80"
+                className="absolute bottom-3 right-14 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-colors hover:bg-black/80"
               >
                 {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </button>
+
+              {/* Fullscreen toggle — expands the TV screen to fill the display */}
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+                className="absolute bottom-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-colors hover:bg-black/80"
+              >
+                {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
               </button>
             </>
           )}
